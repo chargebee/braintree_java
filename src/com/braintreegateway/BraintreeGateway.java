@@ -127,7 +127,9 @@ public class BraintreeGateway {
     }
 
     public String getAuthorizationHeader() {
-        return "Basic " + Base64.encodeBase64String((publicKey + ":" + privateKey).getBytes()).trim();
+        return "Basic " + Base64.encodeBase64String((publicKey + ":" + privateKey).getBytes()) //
+                .replaceAll("\r?", "").replaceAll("\n?", "") //
+                .trim();
     }
 
     public Configuration getConfiguration() {
