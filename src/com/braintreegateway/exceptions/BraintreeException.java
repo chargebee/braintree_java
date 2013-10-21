@@ -10,4 +10,8 @@ public class BraintreeException extends RuntimeException {
     public BraintreeException() {
         super();
     }
+
+    public BraintreeException(Throwable cause) {
+        super(cause);
+    }
 }

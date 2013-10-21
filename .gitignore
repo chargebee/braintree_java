@@ -15,3 +15,5 @@ out/
 #netbeans excludes
 manifest.mf
 nbproject/private/
+build/
+dist/

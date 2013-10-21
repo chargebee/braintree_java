@@ -23,11 +23,13 @@ import com.braintreegateway.Configuration;
 import com.braintreegateway.Request;
 import com.braintreegateway.exceptions.AuthenticationException;
 import com.braintreegateway.exceptions.AuthorizationException;
+import com.braintreegateway.exceptions.BraintreeConnException;
 import com.braintreegateway.exceptions.DownForMaintenanceException;
 import com.braintreegateway.exceptions.NotFoundException;
 import com.braintreegateway.exceptions.ServerException;
 import com.braintreegateway.exceptions.UnexpectedException;
 import com.braintreegateway.exceptions.UpgradeRequiredException;
+import java.security.GeneralSecurityException;
 
 public class Http {
 
@@ -100,13 +102,16 @@ public class Http {
 
             responseStream.close();
             return NodeWrapperFactory.instance.create(xml);
+        } catch (GeneralSecurityException e) { // problem with SSLSocketFactory setup
+            throw new BraintreeConnException(e);
         } catch (IOException e) {
-            throw new UnexpectedException(e.getMessage());
-        }
+            throw new BraintreeConnException(e);
+            //throw new UnexpectedException(e.getMessage());
+        }     
     }
     
-    private SSLSocketFactory getSSLSocketFactory() {
-        try {
+    private SSLSocketFactory getSSLSocketFactory() throws IOException, GeneralSecurityException {
+//        try {
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             keyStore.load(null);
             
@@ -127,9 +132,9 @@ public class Http {
             sslContext.init((KeyManager[]) kmf.getKeyManagers(), tmf.getTrustManagers(), SecureRandom.getInstance("SHA1PRNG"));
 
             return sslContext.getSocketFactory();
-        } catch (Exception e) {
-            throw new UnexpectedException(e.getMessage());
-        }
+//        } catch (Exception e) {
+//            throw new UnexpectedException(e.getMessage());
+//        }
     }
 
     private HttpURLConnection buildConnection(RequestMethod requestMethod, String urlString) throws java.io.IOException {
