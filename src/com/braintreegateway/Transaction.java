@@ -31,8 +31,10 @@ public class Transaction {
         AVS("avs"),
         AVS_AND_CVV("avs_and_cvv"),
         CVV("cvv"),
-        DUPLICATE("duplicate");
-
+        DUPLICATE("duplicate"),
+        FRAUD("fraud"),
+        UNRECOGNIZED("unrecognized");
+        
         private final String name;
 
         GatewayRejectionReason(String name) {
