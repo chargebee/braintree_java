@@ -6,6 +6,7 @@ import com.braintreegateway.util.NodeWrapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -176,7 +177,14 @@ public class Transaction {
     private String authorizedTransactionId;
     private List<String> partialSettlementTransactionIds;
 
+    private Map<String, String> responseParams = new HashMap<String, String>();
+
+    public Map<String, String> getResponseParams() {
+        return responseParams;
+    }
+
     public Transaction(NodeWrapper node) {
+        responseParams = node.getFormParameters();
         amount = node.findBigDecimal("amount");
         avsErrorResponseCode = node.findString("avs-error-response-code");
         avsPostalCodeResponseCode = node.findString("avs-postal-code-response-code");
