@@ -1,3 +1,183 @@
+## 2.55.0
+* Add support for OSGi bundling. Thanks, @lburgazzoli!
+
+## 2.54.0
+* Add verification create API
+* Add support for options in `submit_for_settlement` transaction flows
+
+## 2.53.0
+* Include Coinbase Accounts in `Customer#getPaymentMethods` (Thanks @danmidwood)
+* Add VenmoAccount
+
+## 2.52.0
+* Adds `CHECK` webhook kind
+
+## 2.51.0
+* Fixes broken maven release
+
+## 2.50.0
+* Add kind, openedDate, and wonDate to Dispute
+* Add support for partial settlement transactions
+* Add transaction data to subsription charged successfully webhooks
+
+## 2.49.0
+* Add sourceDescription attribute to Android Pay and Apple Pay
+* Add new Android Pay test nonces
+* Add support for amex rewards transactions
+
+## 2.48.0
+* Add new test payment method nonces
+* Allow passing description on PayPal transactions
+* Expose transaction fee details on PayPal transactions
+
+## 2.47.0
+* Add support for PayPal billing agreements
+
+## 2.46.0
+* Add oauth support
+
+## 2.45.0
+* Add support for Android Pay
+
+## 2.44.0
+* Validate webhook challenge payload
+
+## 2.43.0
+* Fix ThreeDSecureInfo#find to be more consistent
+
+## 2.42.0
+* Add 3DS info to the server side
+
+## 2.41.2
+* Simplified SEPA workflow
+
+## 2.41.1
+## 2.41.0
+* Close InputStreams after use
+* Add additional PayPalDetails getters
+
+## 2.40.0
+* Surface Apple Pay payment instrument name in responses
+* Support making 3DSecure required
+* Add support for Coinbase
+
+## 2.39.2
+* Explicitly disconnect the HttpURLConnection after use (Thanks, @gsharma)
+
+## 2.39.1
+* New validation error constants
+* Add ApplePayDetails#getLast4
+* More searches from CreditCardVerificationSearchRequest
+
+## 2.38.0
+* Allow payee_email in transaction.options.paypal
+* Allow PayPal custom field on transaction create
+* Add support for Retrieval dispute reasons.
+
+## 2.37.0
+
+* Add risk_data to Transaction and Verification with Kount decision and id
+* Add verification_amount an option when creating a credit card
+* Add TravelCruise industry type to Transaction
+* Add room_rate to Lodging industry type
+* Add CreditCard#verification as the latest verification on that credit card
+* Add ApplePay support to all endpoints that may return ApplePayCard objects
+* Add prefix to sample Webhook to simulate webhook query params
+
+## 2.36.0
+
+* ApplePay support
+
+## 2.35.0
+
+* Allow descriptor to be passed in Funding Details options params for Merchant Account create and update.
+
+## 2.34.0
+
+* Add additionalProcessorResponse to transaction
+
+## 2.33.1
+
+* Allow payee_email to be passed in options params for Transaction create
+
+## 2.33.0
+
+* Added paypal specific fields to transaction calls
+* Added SettlementPending, SettlementDeclined transaction statuses
+
+## 2.32.0
+
+* Add descriptor url support
+
+## 2.31.0
+
+* Allow credit card verification options to be passed outside of the nonce for PaymentMethod.create
+* Allow billing_address parameters and billing_address_id to be passed outside of the nonce for PaymentMethod.create
+* Add Subscriptions to paypal accounts
+* Add PaymentMethod.update
+* Add fail_on_duplicate_payment_method option to PaymentMethod.create
+* Add support for dispute webhooks
+
+## 2.30.1
+* Support for v.zero SDKs.
+
+## 2.29.1
+
+* Make webhook parsing more robust with newlines
+* Add messages to InvalidSignature exceptions
+
+## 2.29.0
+
+* Include Dispute information on Transaction
+* Search for Transactions disputed on a certain date
+
+## 2.28.0
+
+* Disbursement Webhooks
+
+## 2.27.0
+* Merchant account find API
+
+## 2.26.0
+* Merchant account update API
+* Merchant account create API v2
+
+## 2.25.1
+* Use new Braintree Gateway API endpoints
+
+## 2.25.0
+* Adds support for Partnerships
+
+## 2.24.1
+* Adds fraud to gatewayRejectionReason, unrecognized to all enums missing it.
+
+## 2.24.0
+
+* Adds holdInEscrow method
+* Add error codes for verification not supported error
+* Add companyName and taxId to ApplicantDetailsRequest
+* Adds cancelRelease method
+* Adds releaseFromEscrow functionality
+* Adds merchant account phone error code.
+
+## 2.23.0
+
+* Adds device data to transactions, customers, and credit cards.
+* Lots of cleanups [thanks to https://github.com/steve-nester-uk]
+
+## 2.22.1
+
+* Bumps version in maven pom.xml
+
+## 2.22.0
+
+* Adds disbursement details to transactions.
+* Adds image url to transactions.
+
+## 2.21.0
+
+* Adds Venmo Touch support.
+
 ## 2.20.0
 
 * Adds channel field to transactions.

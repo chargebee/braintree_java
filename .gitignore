@@ -1,3 +1,7 @@
+.classpath
+.project
+.settings
+.settings/*
 /.idea
 *.iml
 /*.jar
@@ -17,3 +21,4 @@ manifest.mf
 nbproject/private/
 build/
 dist/
+target/
