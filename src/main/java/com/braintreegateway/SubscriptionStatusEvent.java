@@ -10,6 +10,8 @@ import java.util.Calendar;
 
 public class SubscriptionStatusEvent {
     private BigDecimal balance;
+    private String currencyIsoCode;
+    private String planId;
     private BigDecimal price;
     private Calendar timestamp;
     private Source source;
@@ -18,15 +20,25 @@ public class SubscriptionStatusEvent {
 
     public SubscriptionStatusEvent(NodeWrapper node) {
         balance = node.findBigDecimal("balance");
+        currencyIsoCode = node.findString("currency-iso-code");
+        planId = node.findString("plan-id");
         price = node.findBigDecimal("price");
+        source = EnumUtils.findByName(Source.class, node.findString("subscription-source"), Source.UNRECOGNIZED);
         status = EnumUtils.findByName(Status.class, node.findString("status"), Status.UNRECOGNIZED);
         timestamp = node.findDateTime("timestamp");
-        source = EnumUtils.findByName(Source.class, node.findString("subscription-source"), Source.UNRECOGNIZED);
         user = node.findString("user");
     }
 
     public BigDecimal getBalance() {
         return balance;
+    }
+
+    public String getCurrencyIsoCode() {
+        return currencyIsoCode;
+    }
+
+    public String getPlanId() {
+        return planId;
     }
 
     public BigDecimal getPrice() {

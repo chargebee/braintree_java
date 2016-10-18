@@ -44,6 +44,8 @@ public class WebhookTestingGateway {
             case SUB_MERCHANT_ACCOUNT_APPROVED: return merchantAccountXmlActive(id);
             case SUB_MERCHANT_ACCOUNT_DECLINED: return merchantAccountXmlDeclined(id);
             case TRANSACTION_DISBURSED: return transactionXml(id);
+            case TRANSACTION_SETTLED: return transactionSettledXml(id);
+            case TRANSACTION_SETTLEMENT_DECLINED: return transactionSettlementDeclinedXml(id);
             case DISBURSEMENT: return disbursementXml(id);
             case DISPUTE_OPENED: return disputeOpenedXml(id);
             case DISPUTE_LOST: return disputeLostXml(id);
@@ -53,6 +55,7 @@ public class WebhookTestingGateway {
             case PARTNER_MERCHANT_DISCONNECTED: return partnerMerchantDisconnectedXml(id);
             case PARTNER_MERCHANT_DECLINED: return partnerMerchantDeclinedXml(id);
             case SUBSCRIPTION_CHARGED_SUCCESSFULLY: return subscriptionChargedSuccessfullyXml(id);
+            case ACCOUNT_UPDATER_DAILY_REPORT: return accountUpdaterDailyReportXml(id);
             default: return subscriptionXml(id);
         }
     }
@@ -137,6 +140,50 @@ public class WebhookTestingGateway {
                 node("disbursement-details",
                     node("disbursement-date", TYPE_DATE, "2013-07-09")
                 ),
+                node("billing"),
+                node("credit-card"),
+                node("customer"),
+                node("descriptor"),
+                node("shipping"),
+                node("subscription")
+        );
+    }
+
+    private String transactionSettledXml(String id) {
+        return node("transaction",
+                node("id", id),
+                node("status", "settled"),
+                node("amount", "100"),
+                node("us-bank-account",
+                    node("routing-number", "123456789"),
+                    node("last-4", "1234"),
+                    node("account-type", "checking"),
+                    node("account-description", "PayPal Checking - 1234"),
+                    node("account-holder-name", "Dan Schulman")
+                ),
+                node("disbursement-details"),
+                node("billing"),
+                node("credit-card"),
+                node("customer"),
+                node("descriptor"),
+                node("shipping"),
+                node("subscription")
+        );
+    }
+
+    private String transactionSettlementDeclinedXml(String id) {
+        return node("transaction",
+                node("id", id),
+                node("status", "settlement_declined"),
+                node("amount", "100"),
+                node("us-bank-account",
+                    node("routing-number", "123456789"),
+                    node("last-4", "1234"),
+                    node("account-type", "checking"),
+                    node("account-description", "PayPal Checking - 1234"),
+                    node("account-holder-name", "Dan Schulman")
+                ),
+                node("disbursement-details"),
                 node("billing"),
                 node("credit-card"),
                 node("customer"),
@@ -264,6 +311,13 @@ public class WebhookTestingGateway {
     private String partnerMerchantDeclinedXml(String id) {
         return node("partner-merchant",
                 node("partner-merchant-id", "abc123")
+        );
+    }
+
+    private String accountUpdaterDailyReportXml(String id) {
+        return node("account-updater-daily-report",
+                node("report-url", "link-to-csv-report"),
+                node("report-date", TYPE_DATE, "2016-01-14")
         );
     }
 

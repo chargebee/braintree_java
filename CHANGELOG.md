@@ -1,3 +1,61 @@
+## 2.68.0
+* Add 'UsBankAccount' payment method
+
+## 2.67.0
+* Use TLS v1.2 by default and fallback to TLS
+* Add getPlanId() to SubscriptionStatusEvent
+* Add createdAt to subscription search
+
+## 2.66.0
+* Log encoding error instead of printing stack trace
+* Reuse SSLSocketFactory for http requests
+* Allow proxy objects to be used to specify proxy config
+* Add currency iso code
+* Expose credit card product ID
+* Add validation error for verifications with submerchants
+
+## 2.65.0
+* Allow passing OAuth scopes to `Merchant#create`
+* Support passing `transaction_source` for setting moto or recurring ECI flag
+* Add support for passing risk data
+* Allow updating default_payment_method on Customer
+
+## 2.64.0
+* Add OrderId to refund
+* Add 3DS Pass thru support
+* Add verificiation amount option to Payment Method request
+* Expose ids in resource collections
+
+## 2.63.0
+* Add method of revoking OAuth access tokens.
+
+## 2.62.0
+* Add transaction `UpdateDetails`
+* Add ssnLast4 to merchant account individual details
+* Support for Too Many Requests response codes
+
+## 2.61.0
+* Add new landing_page param to OAuthConnectUrlRequest
+
+## 2.60.0
+* Add getSubscriptions method to PaymentMethod interface (Thanks @singhalkul!)
+* Add establishedOn attribute to partner business data
+* Allow passing companyName and currencies to `Merchant#create`
+
+## 2.59.0
+* Remove java.util.logging.ConsoleHandler
+* Add isInvalid error code for addresses
+
+## 2.58.0
+* Add timeout attribute to Configuration
+* Adds shared vault parameters
+
+## 2.57.0
+* Add support for logging. Thanks @yatsenko-ihor!
+
+## 2.56.0
+* Add AccountUpdaterDailyReport webhook parsing
+
 ## 2.55.0
 * Add support for OSGi bundling. Thanks, @lburgazzoli!
 

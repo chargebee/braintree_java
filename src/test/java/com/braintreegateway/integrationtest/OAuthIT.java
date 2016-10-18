@@ -1,22 +1,23 @@
 package com.braintreegateway.integrationtest;
 
 import com.braintreegateway.*;
+import com.braintreegateway.exceptions.AuthenticationException;
 import com.braintreegateway.testhelpers.TestHelper;
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.Before;
 
 import java.util.*;
 import java.net.URL;
 
 import static org.junit.Assert.*;
 
-public class OAuthIT {
-
-    private BraintreeGateway gateway;
+public class OAuthIT extends IntegrationTest {
 
     @Before
     public void createGateway() {
-        this.gateway = new BraintreeGateway("client_id$development$integration_client_id", "client_secret$development$integration_client_secret");
+        this.gateway = new BraintreeGateway("client_id$development$integration_client_id",
+           "client_secret$development$integration_client_secret"
+        );
     }
 
     @Test
@@ -73,6 +74,26 @@ public class OAuthIT {
         assertEquals("bearer", refreshTokenResult.getTarget().getTokenType());
     }
 
+    @Test(expected = AuthenticationException.class)
+    public void revokeAccessToken() {
+        String code = TestHelper.createOAuthGrant(gateway, "integration_merchant_id", "read_write");
+
+        OAuthCredentialsRequest oauthCredentials = new OAuthCredentialsRequest().
+             code(code).
+             scope("read_write");
+
+        Result<OAuthCredentials> result = gateway.oauth().createTokenFromCode(oauthCredentials);
+
+        String accessToken = result.getTarget().getAccessToken();
+        Result<OAuthResult> revokeAccessTokenResult = gateway.oauth().revokeAccessToken(accessToken);
+
+        assertTrue(revokeAccessTokenResult.isSuccess());
+        assertTrue(revokeAccessTokenResult.getTarget().getResult());
+
+        gateway = new BraintreeGateway(accessToken);
+        gateway.customer().create(new CustomerRequest());
+    }
+
     @Test
     public void connectUrlReturnsCorrectUrl() {
         OAuthConnectUrlRequest request = new OAuthConnectUrlRequest().
@@ -80,6 +101,7 @@ public class OAuthIT {
             redirectUri("http://bar.example.com").
             scope("read_write").
             state("baz_state").
+            landingPage("login").
             user().
                 country("USA").
                 email("foo@example.com").
@@ -111,6 +133,7 @@ public class OAuthIT {
                 fulfillmentCompletedIn(7).
                 currency("USD").
                 website("http://example.com").
+                establishedOn("1988-10").
                 done();
 
         String urlString = gateway.oauth().connectUrl(request);
@@ -129,6 +152,7 @@ public class OAuthIT {
             assertEquals("http://bar.example.com", query.get("redirect_uri"));
             assertEquals("read_write", query.get("scope"));
             assertEquals("baz_state", query.get("state"));
+            assertEquals("login", query.get("landing_page"));
 
             assertEquals("USA", query.get("user[country]"));
 
@@ -161,6 +185,7 @@ public class OAuthIT {
             assertEquals("7", query.get("business[fulfillment_completed_in]"));
             assertEquals("USD", query.get("business[currency]"));
             assertEquals("http://example.com", query.get("business[website]"));
+            assertEquals("1988-10", query.get("business[established_on]"));
 
             assertEquals(64, query.get("signature").length());
             assertTrue(query.get("signature").matches("^[a-f0-9]+$"));

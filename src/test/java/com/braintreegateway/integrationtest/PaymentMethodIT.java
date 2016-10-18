@@ -1,24 +1,20 @@
 package com.braintreegateway.integrationtest;
 
 import java.util.Date;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Random;
 import com.braintreegateway.*;
 import com.braintreegateway.testhelpers.TestHelper;
 import com.braintreegateway.exceptions.NotFoundException;
 import com.braintreegateway.test.Nonce;
+import com.braintreegateway.util.NodeWrapper;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class PaymentMethodIT {
-
-    private BraintreeGateway gateway;
-
-    @Before
-    public void createGateway() {
-        this.gateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_id", "integration_public_key", "integration_private_key");
-    }
+public class PaymentMethodIT extends IntegrationTest {
 
     @Test
     public void createPayPalAccountWithNonce() {
@@ -42,6 +38,7 @@ public class PaymentMethodIT {
         assertNotNull(paypalAccount.getEmail());
         assertNotNull(paypalAccount.getImageUrl());
         assertNotNull(paypalAccount.getCustomerId());
+        assertNotNull(paypalAccount.getSubscriptions());
     }
 
     @Test
@@ -98,6 +95,7 @@ public class PaymentMethodIT {
         assertNotNull(paymentMethod.getImageUrl());
         assertNotNull(paymentMethod.getCustomerId());
         assertTrue(paymentMethod.isDefault());
+        assertNotNull(paymentMethod.getSubscriptions());
     }
 
     @Test
@@ -118,6 +116,7 @@ public class PaymentMethodIT {
         assertNotNull(paymentMethod.getToken());
         assertNotNull(paymentMethod.getImageUrl());
         assertNotNull(paymentMethod.getCustomerId());
+        assertNotNull(paymentMethod.getSubscriptions());
     }
 
     @Test
@@ -138,6 +137,7 @@ public class PaymentMethodIT {
         assertNotNull(paymentMethod.getToken());
         assertNotNull(paymentMethod.getImageUrl());
         assertNotNull(paymentMethod.getCustomerId());
+        assertNotNull(paymentMethod.getSubscriptions());
     }
 
     @Test
@@ -255,6 +255,56 @@ public class PaymentMethodIT {
     }
 
     @Test
+    public void createUsBankAccountFromNonce() {
+        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
+        assertTrue(customerResult.isSuccess());
+        Customer customer = customerResult.getTarget();
+
+        String nonce = TestHelper.generateValidUsBankAccountNonce(gateway);
+        PaymentMethodRequest request = new PaymentMethodRequest()
+            .customerId(customer.getId())
+            .paymentMethodNonce(nonce)
+            .options()
+            .done();
+
+        Result<? extends PaymentMethod> result = gateway.paymentMethod().create(request);
+
+        assertTrue(result.isSuccess());
+
+        PaymentMethod paymentMethod = result.getTarget();
+        assertNotNull(paymentMethod.getToken());
+
+        UsBankAccount usBankAccount = (UsBankAccount) paymentMethod;
+        assertEquals("123456789", usBankAccount.getRoutingNumber());
+        assertEquals("1234", usBankAccount.getLast4());
+        assertEquals("checking", usBankAccount.getAccountType());
+        assertEquals("PayPal Checking - 1234", usBankAccount.getAccountDescription());
+        assertEquals("Dan Schulman", usBankAccount.getAccountHolderName());
+    }
+
+    @Test
+    public void doesNotCreateUsBankAccountFromInvalidNonce() {
+        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
+        assertTrue(customerResult.isSuccess());
+        Customer customer = customerResult.getTarget();
+
+        String nonce = TestHelper.generateInvalidUsBankAccountNonce();
+        PaymentMethodRequest request = new PaymentMethodRequest()
+            .customerId(customer.getId())
+            .paymentMethodNonce(nonce)
+            .options()
+            .done();
+
+        Result<? extends PaymentMethod> result = gateway.paymentMethod().create(request);
+
+        assertFalse(result.isSuccess());
+        assertEquals(
+                ValidationErrorCode.PAYMENT_METHOD_PAYMENT_METHOD_NONCE_UNKNOWN,
+                result.getErrors().forObject("payment_method").onField("payment_method_nonce").get(0).getCode()
+        );
+    }
+
+    @Test
     public void createAbstractPaymentMethod() {
         Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
         assertTrue(customerResult.isSuccess());
@@ -270,6 +320,7 @@ public class PaymentMethodIT {
         assertNotNull(paymentMethod.getToken());
         assertNotNull(paymentMethod.getImageUrl());
         assertNotNull(paymentMethod.getCustomerId());
+        assertNotNull(paymentMethod.getSubscriptions());
     }
 
     @Test
@@ -359,6 +410,7 @@ public class PaymentMethodIT {
         PaymentMethod paymentMethod = result.getTarget();
         assertNotNull(paymentMethod.getImageUrl());
         assertNotNull(paymentMethod.getCustomerId());
+        assertNotNull(paymentMethod.getSubscriptions());
     }
 
     @Test
@@ -563,6 +615,55 @@ public class PaymentMethodIT {
 
         PayPalAccount foundAccount = gateway.paypalAccount().find(token);
         assertFalse(foundAccount == null);
+    }
+
+    @Test
+    public void getSubscriptionsForAllPaymentMethodTypes() {
+        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
+        assertTrue(customerResult.isSuccess());
+        Customer customer = customerResult.getTarget();
+
+        String[] nonces = {
+            Nonce.AndroidPay, Nonce.ApplePayVisa, Nonce.Coinbase,
+            Nonce.Transactable, Nonce.PayPalFuturePayment
+        };
+
+        List<String> subscriptionIds = new ArrayList<String>();
+
+        for (String nonce : nonces) {
+            PaymentMethodRequest request = new PaymentMethodRequest()
+                .paymentMethodNonce(nonce)
+                .customerId(customer.getId());
+
+            Result<? extends PaymentMethod> paymentMethodResult = gateway.paymentMethod().create(request);
+            assertTrue(paymentMethodResult.isSuccess());
+
+            Plan plan = PlanFixture.PLAN_WITHOUT_TRIAL;
+            SubscriptionRequest subscriptionRequest = new SubscriptionRequest()
+                .paymentMethodToken(paymentMethodResult.getTarget().getToken())
+                .planId(plan.getId());
+
+            Result<? extends Subscription> subscriptionResult = gateway.subscription().create(subscriptionRequest);
+            assertTrue(subscriptionResult.isSuccess());
+            assertNotNull(subscriptionResult.getTarget().getId());
+            subscriptionIds.add(subscriptionResult.getTarget().getId());
+        }
+
+        Customer foundCustomer = gateway.customer().find(customer.getId());
+
+        List<? extends PaymentMethod> paymentMethods = foundCustomer.getPaymentMethods();
+        assertEquals(paymentMethods.size(), nonces.length);
+
+        int subscriptionCount = 0;
+        for (PaymentMethod paymentMethod : paymentMethods) {
+            List<Subscription> subscriptions = paymentMethod.getSubscriptions();
+            for (Subscription subscription : subscriptions) {
+                subscriptionCount++;
+                assertTrue(subscriptionIds.contains(subscription.getId()));
+            }
+        }
+
+        assertEquals(subscriptionCount, nonces.length);
     }
 
     @Test
@@ -856,6 +957,22 @@ public class PaymentMethodIT {
         assertFalse(result.isSuccess());
         assertEquals(result.getCreditCardVerification().getStatus(), CreditCardVerification.Status.PROCESSOR_DECLINED);
         assertNull(result.getCreditCardVerification().getGatewayRejectionReason());
+    }
+
+    @Test
+    public void allowsCustomVerificationAmount() {
+        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
+        Customer customer = customerResult.getTarget();
+        PaymentMethodRequest paymentMethodRequest = new PaymentMethodRequest().
+            customerId(customer.getId()).
+            paymentMethodNonce("fake-valid-nonce").
+            options().
+                verifyCard(true).
+                verificationAmount("1.02").
+                done();
+
+        Result<? extends PaymentMethod> paymentMethodResult = gateway.paymentMethod().create(paymentMethodRequest);
+        assertTrue(paymentMethodResult.isSuccess());
     }
 
     @Test
@@ -1188,4 +1305,33 @@ public class PaymentMethodIT {
         assertFalse(foundCreditCard == null);
         assertEquals(foundCreditCard.getBillingAddress().getStreetAddress(), "456 Xyz Way");
     }
+
+    @Test
+    public void grantAndRevoke() {
+        BraintreeGateway partnerMerchantGateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_public_id", "oauth_app_partner_user_public_key", "oauth_app_partner_user_private_key");
+        Result<Customer> customerResult = partnerMerchantGateway.customer().create(new CustomerRequest());
+        Customer customer = customerResult.getTarget();
+
+        PaymentMethodRequest request = new PaymentMethodRequest().
+            paymentMethodNonce(Nonce.Transactable).
+            customerId(customer.getId());
+        Result<? extends PaymentMethod> result = partnerMerchantGateway.paymentMethod().create(request);
+        String paymentMethodToken = result.getTarget().getToken();
+        BraintreeGateway oauthGateway = new BraintreeGateway("client_id$development$integration_client_id", "client_secret$development$integration_client_secret");
+        String code = TestHelper.createOAuthGrant(oauthGateway, "integration_merchant_id", "grant_payment_method");
+
+        OAuthCredentialsRequest oauthRequest = new OAuthCredentialsRequest().
+            code(code).
+            scope("grant_payment_method");
+
+
+        Result<OAuthCredentials> accessTokenResult = oauthGateway.oauth().createTokenFromCode(oauthRequest);
+
+        BraintreeGateway accessTokenGateway = new BraintreeGateway(accessTokenResult.getTarget().getAccessToken());
+        Result<PaymentMethodNonce> grantResult = accessTokenGateway.paymentMethod().grant(paymentMethodToken);
+        assertTrue(grantResult.isSuccess());
+        NodeWrapper revokeResult = accessTokenGateway.paymentMethod().revoke(paymentMethodToken);
+        assertTrue(revokeResult.isSuccess());
+    }
+
 }

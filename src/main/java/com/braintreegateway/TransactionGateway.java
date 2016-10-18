@@ -96,6 +96,11 @@ public class TransactionGateway {
         return new Result<Transaction>(response, Transaction.class);
     }
 
+    public Result<Transaction> refund(String id, TransactionRefundRequest request) {
+        NodeWrapper response = http.post(configuration.getMerchantPath() + "/transactions/" + id + "/refund", request);
+        return new Result<Transaction>(response, Transaction.class);
+    }
+
     /**
      * Creates a sale {@link Transaction}.
      * @param request the request.
@@ -204,6 +209,17 @@ public class TransactionGateway {
      */
     public Result<Transaction> submitForSettlement(String id, TransactionRequest request) {
         NodeWrapper response = http.put(configuration.getMerchantPath() + "/transactions/" + id + "/submit_for_settlement", request);
+        return new Result<Transaction>(response, Transaction.class);
+    }
+
+    /**
+     * Updates details for a transaction that has been submitted for settlement.
+     * @param id of the transaction to update the details for.
+     * @param request the request.
+     * @return {@link Result}.
+     */
+    public Result<Transaction> updateDetails(String id, TransactionRequest request) {
+        NodeWrapper response = http.put(configuration.getMerchantPath() + "/transactions/" + id + "/update_details", request);
         return new Result<Transaction>(response, Transaction.class);
     }
 

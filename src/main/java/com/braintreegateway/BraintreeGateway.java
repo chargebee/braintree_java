@@ -1,5 +1,7 @@
 package com.braintreegateway;
 
+import com.braintreegateway.test.TestingGateway;
+
 import com.braintreegateway.util.Http;
 import com.braintreegateway.util.TrUtil;
 
@@ -165,6 +167,10 @@ public class BraintreeGateway {
 
     public PayPalAccountGateway paypalAccount() {
         return new PayPalAccountGateway(http, configuration);
+    }
+
+    public UsBankAccountGateway usBankAccount() {
+        return new UsBankAccountGateway(this, http, configuration);
     }
 
     /**

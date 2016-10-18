@@ -8,20 +8,12 @@ import com.braintreegateway.SandboxValues.TransactionAmount;
 import com.braintreegateway.test.*;
 
 import org.junit.Test;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
 
-public class CoinbaseIT {
-
-    private BraintreeGateway gateway;
-
-    @Before
-    public void createGateway() {
-        this.gateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_id", "integration_public_key", "integration_private_key");
-    }
+public class CoinbaseIT extends IntegrationTest{
 
     @Test
     public void canCreateTransaction() {
@@ -115,4 +107,34 @@ public class CoinbaseIT {
         exception.expect(NotFoundException.class);
         gateway.paymentMethod().find(token);
     }
+
+    @Test
+    public void updateUpdatesCoinbaseAccount() {
+        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
+        String customerId = customerResult.getTarget().getId();
+
+        PaymentMethodRequest venmoRequest = new PaymentMethodRequest().customerId(customerId).paymentMethodNonce(Nonce.VenmoAccount);
+        Result<? extends PaymentMethod> venmoResult = gateway.paymentMethod().create(venmoRequest);
+        VenmoAccount venmoAccount = (VenmoAccount) venmoResult.getTarget();
+        assertTrue(venmoAccount.isDefault());
+
+        PaymentMethodRequest request = new PaymentMethodRequest().customerId(customerId).paymentMethodNonce(Nonce.Coinbase);
+        Result<? extends PaymentMethod> paymentMethodResult = gateway.paymentMethod().create(request);
+
+        assertTrue(paymentMethodResult.isSuccess());
+        String token = paymentMethodResult.getTarget().getToken();
+
+        PaymentMethodRequest updatePaymentMethodRequest = new PaymentMethodRequest().
+            options().
+                makeDefault(true).
+                done();
+
+        Result<? extends PaymentMethod> result = gateway.paymentMethod().update(token, updatePaymentMethodRequest);
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getTarget() instanceof CoinbaseAccount);
+        CoinbaseAccount coinbaseAccount = (CoinbaseAccount) result.getTarget();
+        assertTrue(coinbaseAccount.isDefault());
+    }
+
 }

@@ -1,7 +1,6 @@
 package com.braintreegateway.integrationtest;
 
 import com.braintreegateway.*;
-import org.junit.Before;
 import org.junit.Test;
 import com.braintreegateway.exceptions.NotFoundException;
 
@@ -10,15 +9,7 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class MerchantAccountIT {
-
-    private BraintreeGateway gateway;
-
-    @Before
-    public void createGateway() {
-        this.gateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_id", "integration_public_key",
-                "integration_private_key");
-    }
+public class MerchantAccountIT extends IntegrationTest {
 
     @Test
     public void deprecatedCreateSucceeds() {
@@ -149,6 +140,7 @@ public class MerchantAccountIT {
         assertEquals("Avondale", merchantAccount.getIndividualDetails().getAddress().getLocality());
         assertEquals("IN", merchantAccount.getIndividualDetails().getAddress().getRegion());
         assertEquals("1985-09-10", merchantAccount.getIndividualDetails().getDateOfBirth());
+        assertEquals("1235", merchantAccount.getIndividualDetails().getSsnLast4());
         assertEquals("Calculon", merchantAccount.getBusinessDetails().getLegalName());
         assertEquals("Calculon", merchantAccount.getBusinessDetails().getDbaName());
         assertEquals("123456780", merchantAccount.getBusinessDetails().getTaxId());

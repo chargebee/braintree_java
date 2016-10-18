@@ -15,7 +15,6 @@
 out/
 *.iml
 .metadata/
-
 #netbeans excludes
 manifest.mf
 nbproject/private/

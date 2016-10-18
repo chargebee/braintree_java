@@ -10,7 +10,6 @@ import com.braintreegateway.testhelpers.MerchantAccountTestConstants;
 import com.braintreegateway.testhelpers.TestHelper;
 import com.braintreegateway.testhelpers.HttpHelper;
 import com.braintreegateway.util.QueryString;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -18,15 +17,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-public class CreditCardIT implements MerchantAccountTestConstants {
-
-    private BraintreeGateway gateway;
-
-    @Before
-    public void createGateway() {
-        this.gateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_id", "integration_public_key",
-                "integration_private_key");
-    }
+public class CreditCardIT extends IntegrationTest implements MerchantAccountTestConstants {
 
     @SuppressWarnings("deprecation")
     @Test
@@ -1253,6 +1244,7 @@ public class CreditCardIT implements MerchantAccountTestConstants {
         CreditCard card = result.getTarget();
 
         assertEquals(CreditCard.Healthcare.YES, card.getHealthcare());
+        assertEquals("J3", card.getProductId());
     }
 
     @Test
@@ -1271,6 +1263,7 @@ public class CreditCardIT implements MerchantAccountTestConstants {
         CreditCard card = result.getTarget();
 
         assertEquals(CreditCard.Payroll.YES, card.getPayroll());
+        assertEquals("MSA", card.getProductId());
     }
 
     @Test
@@ -1348,6 +1341,7 @@ public class CreditCardIT implements MerchantAccountTestConstants {
         assertEquals(CreditCard.Healthcare.NO, card.getHealthcare());
         assertEquals(CreditCard.Payroll.NO, card.getPayroll());
         assertEquals(CreditCard.Prepaid.NO, card.getPrepaid());
+        assertEquals("MSB", card.getProductId());
     }
 
 
@@ -1374,5 +1368,6 @@ public class CreditCardIT implements MerchantAccountTestConstants {
         assertEquals(CreditCard.Prepaid.UNKNOWN, card.getPrepaid());
         assertEquals("Unknown", card.getCountryOfIssuance());
         assertEquals("Unknown", card.getIssuingBank());
+        assertEquals("Unknown", card.getProductId());
     }
 }

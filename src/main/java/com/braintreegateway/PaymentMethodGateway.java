@@ -37,6 +37,18 @@ public class PaymentMethodGateway {
         return parseResponse(response).getTarget();
     }
 
+    public Result<PaymentMethodNonce> grant(String token) {
+        String request = new RequestBuilder("payment-method").addElement("shared-payment-method-token", token).toXML();
+        NodeWrapper response = http.post(configuration.getMerchantPath() + "/payment_methods/grant", request);
+        return new Result<PaymentMethodNonce>(response, PaymentMethodNonce.class);
+    }
+
+    public NodeWrapper revoke(String token) {
+        String request = new RequestBuilder("payment-method").addElement("shared-payment-method-token", token).toXML();
+        NodeWrapper response = http.post(configuration.getMerchantPath() + "/payment_methods/revoke", request);
+        return response;
+    }
+
     public Result<? extends PaymentMethod> parseResponse(NodeWrapper response) {
         if (response.getElementName() == "paypal-account") {
             return new Result<PayPalAccount>(response, PayPalAccount.class);
@@ -52,6 +64,8 @@ public class PaymentMethodGateway {
             return new Result<AmexExpressCheckoutCard>(response, AmexExpressCheckoutCard.class);
         } else if (response.getElementName() == "coinbase-account") {
             return new Result<CoinbaseAccount>(response, CoinbaseAccount.class);
+        } else if (response.getElementName() == "us-bank-account") {
+            return new Result<UsBankAccount>(response, UsBankAccount.class);
         } else if (response.getElementName() == "venmo-account") {
             return new Result<VenmoAccount>(response, VenmoAccount.class);
         } else {
