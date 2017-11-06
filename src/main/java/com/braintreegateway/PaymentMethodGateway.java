@@ -28,6 +28,11 @@ public class PaymentMethodGateway {
         return new Result<UnknownPaymentMethod>();
     }
 
+    public Result<? extends PaymentMethod> delete(String token, PaymentMethodDeleteRequest request) {
+        http.delete(configuration.getMerchantPath() + "/payment_methods/any/" + token + "?" + request.toQueryString());
+        return new Result<UnknownPaymentMethod>();
+    }
+
     public PaymentMethod find(String token) {
         if(token == null || token.trim().equals(""))
             throw new NotFoundException();
@@ -35,6 +40,25 @@ public class PaymentMethodGateway {
         NodeWrapper response = http.get(configuration.getMerchantPath() + "/payment_methods/any/" + token);
 
         return parseResponse(response).getTarget();
+    }
+
+    public Result<PaymentMethodNonce> grant(String token) {
+        String request = new RequestBuilder("payment-method").addElement("shared-payment-method-token", token).toXML();
+        NodeWrapper response = http.post(configuration.getMerchantPath() + "/payment_methods/grant", request);
+        return new Result<PaymentMethodNonce>(response, PaymentMethodNonce.class);
+    }
+
+    public Result<PaymentMethodNonce> grant(String token, PaymentMethodGrantRequest grantRequest) {
+        String request = grantRequest.sharedPaymentMethodToken(token).toXML();
+        NodeWrapper response = http.post(configuration.getMerchantPath() + "/payment_methods/grant", request);
+        return new Result<PaymentMethodNonce>(response, PaymentMethodNonce.class);
+    }
+
+    public Result<? extends PaymentMethod> revoke(String token) {
+        PaymentMethodGrantRevokeRequest revokeRequest = new PaymentMethodGrantRevokeRequest();
+        String request = revokeRequest.sharedPaymentMethodToken(token).toXML();
+        NodeWrapper response = http.post(configuration.getMerchantPath() + "/payment_methods/revoke", request);
+        return parseResponse(response);
     }
 
     public Result<? extends PaymentMethod> parseResponse(NodeWrapper response) {
@@ -52,8 +76,14 @@ public class PaymentMethodGateway {
             return new Result<AmexExpressCheckoutCard>(response, AmexExpressCheckoutCard.class);
         } else if (response.getElementName() == "coinbase-account") {
             return new Result<CoinbaseAccount>(response, CoinbaseAccount.class);
+        } else if (response.getElementName() == "us-bank-account") {
+            return new Result<UsBankAccount>(response, UsBankAccount.class);
         } else if (response.getElementName() == "venmo-account") {
             return new Result<VenmoAccount>(response, VenmoAccount.class);
+        } else if (response.getElementName() == "visa-checkout-card") {
+            return new Result<VisaCheckoutCard>(response, VisaCheckoutCard.class);
+        } else if (response.getElementName() == "masterpass-card") {
+            return new Result<MasterpassCard>(response, MasterpassCard.class);
         } else {
             return new Result<UnknownPaymentMethod>(response, UnknownPaymentMethod.class);
         }

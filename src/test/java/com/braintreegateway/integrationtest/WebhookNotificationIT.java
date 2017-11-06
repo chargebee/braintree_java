@@ -11,7 +11,6 @@ import com.braintreegateway.testhelpers.TestHelper;
 import com.braintreegateway.util.NodeWrapper;
 import com.braintreegateway.util.NodeWrapperFactory;
 import com.braintreegateway.ValidationErrorCode;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Calendar;
@@ -20,13 +19,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
-public class WebhookNotificationIT {
-    private BraintreeGateway gateway;
-
-    @Before
-    public void createGateway() {
-        this.gateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_id", "integration_public_key", "integration_private_key");
-    }
+public class WebhookNotificationIT extends IntegrationTest {
 
     @Test
     public void createNotificationWithUnrecognizedKind() {
@@ -250,6 +243,46 @@ public class WebhookNotificationIT {
     }
 
     @Test
+    public void createsSampleTransactionSettledNotification() {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.TRANSACTION_SETTLED, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification().parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.TRANSACTION_SETTLED, notification.getKind());
+
+        Transaction transaction = notification.getTransaction();
+
+        assertEquals("100", transaction.getAmount().toString());
+        assertEquals(Transaction.Status.SETTLED, transaction.getStatus());
+
+        UsBankAccountDetails usBankAccountDetails = transaction.getUsBankAccountDetails();
+        assertEquals("123456789", usBankAccountDetails.getRoutingNumber());
+        assertEquals("1234", usBankAccountDetails.getLast4());
+        assertEquals("checking", usBankAccountDetails.getAccountType());
+        assertEquals("Dan Schulman", usBankAccountDetails.getAccountHolderName());
+    }
+
+    @Test
+    public void createsSampleTransactionSettlementDeclinedNotification() {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.TRANSACTION_SETTLEMENT_DECLINED, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification().parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.TRANSACTION_SETTLEMENT_DECLINED, notification.getKind());
+
+        Transaction transaction = notification.getTransaction();
+
+        assertEquals("100", transaction.getAmount().toString());
+        assertEquals(Transaction.Status.SETTLEMENT_DECLINED, transaction.getStatus());
+
+        UsBankAccountDetails usBankAccountDetails = transaction.getUsBankAccountDetails();
+        assertEquals("123456789", usBankAccountDetails.getRoutingNumber());
+        assertEquals("1234", usBankAccountDetails.getLast4());
+        assertEquals("checking", usBankAccountDetails.getAccountType());
+        assertEquals("Dan Schulman", usBankAccountDetails.getAccountHolderName());
+    }
+
+    @Test
     public void createsSampleDisbursementNotification() {
         HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.DISBURSEMENT, "my_id");
 
@@ -335,6 +368,70 @@ public class WebhookNotificationIT {
     }
 
     @Test
+    public void buildsSampleNotificationForConnectedMerchantStatusTransitionedWebhook()
+    {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting()
+            .sampleNotification(WebhookNotification.Kind.CONNECTED_MERCHANT_STATUS_TRANSITIONED, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification()
+            .parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.CONNECTED_MERCHANT_STATUS_TRANSITIONED, notification.getKind());
+        assertEquals("my_id", notification.getConnectedMerchantStatusTransitioned().getMerchantPublicId());
+        assertEquals("new_status", notification.getConnectedMerchantStatusTransitioned().getStatus());
+        assertEquals("oauth_application_client_id", notification.getConnectedMerchantStatusTransitioned().getOAuthApplicationClientId());
+    }
+
+    @Test
+    public void buildsSampleNotificationForConnectedMerchantPayPalStatusChangedWebhook()
+    {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting()
+            .sampleNotification(WebhookNotification.Kind.CONNECTED_MERCHANT_PAYPAL_STATUS_CHANGED, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification()
+            .parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.CONNECTED_MERCHANT_PAYPAL_STATUS_CHANGED, notification.getKind());
+        assertEquals("my_id", notification.getConnectedMerchantPayPalStatusChanged().getMerchantPublicId());
+        assertEquals("link", notification.getConnectedMerchantPayPalStatusChanged().getAction());
+        assertEquals("oauth_application_client_id", notification.getConnectedMerchantPayPalStatusChanged().getOAuthApplicationClientId());
+    }
+
+    @Test
+    public void createsSampleNotificationForIdealPaymentComplete() {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.IDEAL_PAYMENT_COMPLETE, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification().parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.IDEAL_PAYMENT_COMPLETE, notification.getKind());
+
+        IdealPayment idealPayment = notification.getIdealPayment();
+        assertEquals("my_id", idealPayment.getId());
+        assertEquals("COMPLETE", idealPayment.getStatus());
+        assertEquals("ORDERABC", idealPayment.getOrderId());
+        assertEquals("10.00", idealPayment.getAmount().toString());
+        assertEquals("https://example.com", idealPayment.getApprovalUrl());
+        assertEquals("1234567890", idealPayment.getIdealTransactionId());
+    }
+
+    @Test
+    public void createsSampleNotificationForIdealPaymentFailed() {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.IDEAL_PAYMENT_FAILED, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification().parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.IDEAL_PAYMENT_FAILED, notification.getKind());
+
+        IdealPayment idealPayment = notification.getIdealPayment();
+        assertEquals("my_id", idealPayment.getId());
+        assertEquals("FAILED", idealPayment.getStatus());
+        assertEquals("ORDERABC", idealPayment.getOrderId());
+        assertEquals("10.00", idealPayment.getAmount().toString());
+        assertEquals("https://example.com", idealPayment.getApprovalUrl());
+        assertEquals("1234567890", idealPayment.getIdealTransactionId());
+    }
+
+    @Test
     public void buildsSampleNotificationForCheck()
     {
         HashMap<String, String> sampleNotification = this.gateway.webhookTesting()
@@ -347,5 +444,22 @@ public class WebhookNotificationIT {
         long now = new Date().getTime();
         long age = now - notification.getTimestamp().getTime().getTime();
         assertTrue(age < 5000);
+    }
+
+    @Test
+    public void buildsSampleNotificationForAccountUpdaterDailyReportWebhook()
+    {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting()
+            .sampleNotification(WebhookNotification.Kind.ACCOUNT_UPDATER_DAILY_REPORT, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification()
+            .parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.ACCOUNT_UPDATER_DAILY_REPORT, notification.getKind());
+        assertEquals("link-to-csv-report", notification.getAccountUpdaterDailyReport().getReportUrl());
+
+        assertEquals(2016, notification.getAccountUpdaterDailyReport().getReportDate().get(Calendar.YEAR));
+        assertEquals(Calendar.JANUARY, notification.getAccountUpdaterDailyReport().getReportDate().get(Calendar.MONTH));
+        assertEquals(14, notification.getAccountUpdaterDailyReport().getReportDate().get(Calendar.DAY_OF_MONTH));
     }
 }

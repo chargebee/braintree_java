@@ -24,6 +24,9 @@ public class Customer {
     private List<AmexExpressCheckoutCard> amexExpressCheckoutCards;
     private List<CoinbaseAccount> coinbaseAccounts;
     private List<VenmoAccount> venmoAccounts;
+    private List<VisaCheckoutCard> visaCheckoutCards;
+    private List<MasterpassCard> masterpassCards;
+    private List<UsBankAccount> usBankAccounts;
     private List<Address> addresses;
 
     public Customer(NodeWrapper node) {
@@ -65,6 +68,18 @@ public class Customer {
         venmoAccounts = new ArrayList<VenmoAccount>();
         for (NodeWrapper venmoAccountResponse : node.findAll("venmo-accounts/venmo-account")) {
             venmoAccounts.add(new VenmoAccount(venmoAccountResponse));
+        }
+        visaCheckoutCards = new ArrayList<VisaCheckoutCard>();
+        for (NodeWrapper visaCheckoutCardResponse : node.findAll("visa-checkout-cards/visa-checkout-card")) {
+            visaCheckoutCards.add(new VisaCheckoutCard(visaCheckoutCardResponse));
+        }
+        masterpassCards = new ArrayList<MasterpassCard>();
+        for (NodeWrapper masterpassCardResponse : node.findAll("masterpass-cards/masterpass-card")) {
+            masterpassCards.add(new MasterpassCard(masterpassCardResponse));
+        }
+        usBankAccounts = new ArrayList<UsBankAccount>();
+        for (NodeWrapper usBankAccountResponse : node.findAll("us-bank-accounts/us-bank-account")) {
+            usBankAccounts.add(new UsBankAccount(usBankAccountResponse));
         }
         addresses = new ArrayList<Address>();
         for (NodeWrapper addressResponse : node.findAll("addresses/address")) {
@@ -148,6 +163,18 @@ public class Customer {
         return Collections.unmodifiableList(venmoAccounts);
     }
 
+    public List<VisaCheckoutCard> getVisaCheckoutCards() {
+        return Collections.unmodifiableList(visaCheckoutCards);
+    }
+
+    public List<MasterpassCard> getMasterpassCards() {
+        return Collections.unmodifiableList(masterpassCards);
+    }
+
+    public List<UsBankAccount> getUsBankAccounts() {
+        return Collections.unmodifiableList(usBankAccounts);
+    }
+
     public List<? extends PaymentMethod> getPaymentMethods() {
         List<PaymentMethod> paymentMethods = new ArrayList<PaymentMethod>();
         paymentMethods.addAll(getCreditCards());
@@ -156,6 +183,8 @@ public class Customer {
         paymentMethods.addAll(getAndroidPayCards());
         paymentMethods.addAll(getAmexExpressCheckoutCards());
         paymentMethods.addAll(getVenmoAccounts());
+        paymentMethods.addAll(getVisaCheckoutCards());
+        paymentMethods.addAll(getMasterpassCards());
         paymentMethods.addAll(getCoinbaseAccounts());
         return Collections.unmodifiableList(paymentMethods);
     }

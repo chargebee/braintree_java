@@ -15,10 +15,5 @@
 out/
 *.iml
 .metadata/
-
-#netbeans excludes
-manifest.mf
-nbproject/private/
-build/
-dist/
 target/
+large_file.png

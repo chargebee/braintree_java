@@ -3,19 +3,11 @@ package com.braintreegateway.integrationtest;
 import com.braintreegateway.*;
 import com.braintreegateway.testhelpers.TestHelper;
 import com.braintreegateway.exceptions.NotFoundException;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class PaymentMethodNonceIT {
-
-    private BraintreeGateway gateway;
-
-    @Before
-    public void createGateway() {
-        this.gateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_id", "integration_public_key", "integration_private_key");
-    }
+public class PaymentMethodNonceIT extends IntegrationTest {
 
     @Test
     public void createFromExistingPaymentMethod() {
@@ -48,11 +40,31 @@ public class PaymentMethodNonceIT {
     }
 
     @Test
-    public void findReturnsPaymentMethodNonce() {
-        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find("threedsecurednonce");
+    public void findCreditCardNonceReturnsValidValues() {
+        String nonceString = "fake-valid-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(false, nonce.isConsumed());
+        assertEquals(false, nonce.isDefault());
+        assertNotNull(nonce.getDetails());
+        assertEquals("81", nonce.getDetails().getLastTwo());
+        assertEquals("Visa", nonce.getDetails().getCardType());
+    }
 
-        assertEquals("threedsecurednonce", nonce.getNonce());
-        assertTrue(nonce.getThreeDSecureInfo().isLiabilityShifted());
+    @Test
+    public void findReturnsPaymentMethodNonce() {
+        CreditCardRequest creditCardRequest = new CreditCardRequest().
+            number(SandboxValues.CreditCardNumber.VISA.number).
+            expirationMonth("12").
+            expirationYear("2020");
+
+        String nonce = TestHelper.generateThreeDSecureNonce(gateway, creditCardRequest);
+
+        PaymentMethodNonce foundNonce = gateway.paymentMethodNonce().find(nonce);
+
+        assertEquals(nonce, foundNonce.getNonce());
+        assertTrue(foundNonce.getThreeDSecureInfo().isLiabilityShifted());
     }
 
     @Test

@@ -146,6 +146,10 @@ public class Transaction {
     private AndroidPayDetails androidPayDetails;
     private AmexExpressCheckoutDetails amexExpressCheckoutDetails;
     private VenmoAccountDetails venmoAccountDetails;
+    private UsBankAccountDetails usBankAccountDetails;
+    private IdealPaymentDetails idealPaymentDetails;
+    private VisaCheckoutCardDetails visaCheckoutCardDetails;
+    private MasterpassCardDetails masterpassCardDetails;
     private String planId;
     private String processorAuthorizationCode;
     private String processorResponseCode;
@@ -176,13 +180,16 @@ public class Transaction {
     private CoinbaseDetails coinbaseDetails;
     private String authorizedTransactionId;
     private List<String> partialSettlementTransactionIds;
-
-    private Map<String, String> responseParams = new HashMap<String, String>();
-
+    private List<AuthorizationAdjustment> authorizationAdjustments;
+    private FacilitatedDetails facilitatedDetails;
+    private FacilitatorDetails facilitatorDetails;
+	
+	private Map<String, String> responseParams = new HashMap<String, String>();
+	
     public Map<String, String> getResponseParams() {
         return responseParams;
     }
-
+	
     public Transaction(NodeWrapper node) {
         responseParams = node.getFormParameters();
         amount = node.findBigDecimal("amount");
@@ -227,6 +234,22 @@ public class Transaction {
         NodeWrapper venmoAccountNode = node.findFirst("venmo-account");
         if (venmoAccountNode != null) {
             venmoAccountDetails = new VenmoAccountDetails(venmoAccountNode);
+        }
+        NodeWrapper usBankAccountNode = node.findFirst("us-bank-account");
+        if (usBankAccountNode != null) {
+            usBankAccountDetails = new UsBankAccountDetails(usBankAccountNode);
+        }
+        NodeWrapper idealPaymentNode = node.findFirst("ideal-payment");
+        if (idealPaymentNode != null) {
+            idealPaymentDetails = new IdealPaymentDetails(idealPaymentNode);
+        }
+        NodeWrapper visaCheckoutCardNode = node.findFirst("visa-checkout-card");
+        if (visaCheckoutCardNode != null) {
+            visaCheckoutCardDetails = new VisaCheckoutCardDetails(visaCheckoutCardNode);
+        }
+        NodeWrapper masterpassCardNode = node.findFirst("masterpass-card");
+        if (masterpassCardNode != null) {
+            masterpassCardDetails = new MasterpassCardDetails(masterpassCardNode);
         }
         planId = node.findString("plan-id");
         processorAuthorizationCode = node.findString("processor-authorization-code");
@@ -294,6 +317,21 @@ public class Transaction {
         partialSettlementTransactionIds = new ArrayList<String>();
         for (NodeWrapper partialSettlementTransactionIdNode : node.findAll("partial-settlement-transaction-ids/*")) {
             partialSettlementTransactionIds.add(partialSettlementTransactionIdNode.findString("."));
+        }
+
+        authorizationAdjustments = new ArrayList<AuthorizationAdjustment>();
+        for (NodeWrapper authorizationAdjustmentNode : node.findAll("authorization-adjustments/authorization-adjustment")) {
+            authorizationAdjustments.add(new AuthorizationAdjustment(authorizationAdjustmentNode));
+        }
+
+        NodeWrapper facilitatedDetailsNode = node.findFirst("facilitated-details");
+        if (facilitatedDetailsNode != null) {
+            facilitatedDetails = new FacilitatedDetails(facilitatedDetailsNode);
+        }
+
+        NodeWrapper facilitatorDetailsNode = node.findFirst("facilitator-details");
+        if (facilitatorDetailsNode != null) {
+            facilitatorDetails = new FacilitatorDetails(facilitatorDetailsNode);
         }
     }
 
@@ -407,6 +445,22 @@ public class Transaction {
 
     public VenmoAccountDetails getVenmoAccountDetails() {
         return venmoAccountDetails;
+    }
+
+    public UsBankAccountDetails getUsBankAccountDetails() {
+        return usBankAccountDetails;
+    }
+
+    public IdealPaymentDetails getIdealPaymentDetails() {
+        return idealPaymentDetails;
+    }
+
+    public VisaCheckoutCardDetails getVisaCheckoutCardDetails() {
+        return visaCheckoutCardDetails;
+    }
+
+    public MasterpassCardDetails getMasterpassCardDetails() {
+        return masterpassCardDetails;
     }
 
     public String getPlanId() {
@@ -555,5 +609,17 @@ public class Transaction {
 
     public List<String> getPartialSettlementTransactionIds() {
         return partialSettlementTransactionIds;
+    }
+
+    public List<AuthorizationAdjustment> getAuthorizationAdjustments() {
+        return authorizationAdjustments;
+    }
+
+    public FacilitatedDetails getFacilitatedDetails() {
+        return facilitatedDetails;
+    }
+
+    public FacilitatorDetails getFacilitatorDetails() {
+        return facilitatorDetails;
     }
 }

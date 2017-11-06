@@ -6,7 +6,9 @@ public class PaymentMethodOptionsRequest extends Request {
     private String verificationMerchantAccountId;
     private Boolean failOnDuplicatePaymentMethod;
     private Boolean verifyCard;
+    private String verificationAmount;
     private String venmoSdkSession;
+    private PaymentMethodOptionsPayPalRequest paymentMethodOptionsPayPalRequest;
 
     public PaymentMethodOptionsRequest() {}
 
@@ -42,9 +44,19 @@ public class PaymentMethodOptionsRequest extends Request {
         return this;
     }
 
+    public PaymentMethodOptionsRequest verificationAmount(String verificationAmount) {
+        this.verificationAmount = verificationAmount;
+        return this;
+    }
+
     public PaymentMethodOptionsRequest venmoSdkSession(String venmoSdkSession) {
         this.venmoSdkSession = venmoSdkSession;
         return this;
+    }
+
+    public PaymentMethodOptionsPayPalRequest paypal() {
+        paymentMethodOptionsPayPalRequest = new PaymentMethodOptionsPayPalRequest(this);
+        return paymentMethodOptionsPayPalRequest;
     }
 
     @Override
@@ -57,12 +69,14 @@ public class PaymentMethodOptionsRequest extends Request {
 
         builder.addElement("failOnDuplicatePaymentMethod", failOnDuplicatePaymentMethod);
         builder.addElement("verifyCard", verifyCard);
+        builder.addElement("verificationAmount", verificationAmount);
         builder.addElement("verificationMerchantAccountId", verificationMerchantAccountId);
         if (makeDefault != null && makeDefault.booleanValue()) {
             builder.addElement("makeDefault", makeDefault);
         }
 
         builder.addElement("venmoSdkSession", venmoSdkSession);
+        builder.addElement("paypal", paymentMethodOptionsPayPalRequest);
         return builder;
     }
 }

@@ -1,5 +1,7 @@
 package com.braintreegateway;
 
+import com.braintreegateway.test.TestingGateway;
+
 import com.braintreegateway.util.Http;
 import com.braintreegateway.util.TrUtil;
 
@@ -147,6 +149,16 @@ public class BraintreeGateway {
         return new DiscountGateway(http, configuration);
     }
 
+    /**
+     * Returns a {@link DisputeGateway} for interacting with {@link Dispute}
+     * objects.
+     *
+     * @return an {@link DisputeGateway}.
+     */
+    public DisputeGateway dispute() {
+        return new DisputeGateway(http, configuration);
+    }
+
     public Configuration getConfiguration() {
         return configuration;
     }
@@ -165,6 +177,14 @@ public class BraintreeGateway {
 
     public PayPalAccountGateway paypalAccount() {
         return new PayPalAccountGateway(http, configuration);
+    }
+
+    public UsBankAccountGateway usBankAccount() {
+        return new UsBankAccountGateway(this, http, configuration);
+    }
+
+    public IdealPaymentGateway idealPayment() {
+        return new IdealPaymentGateway(this, http, configuration);
     }
 
     /**
@@ -247,5 +267,9 @@ public class BraintreeGateway {
 
     public TestingGateway testing() {
         return new TestingGateway(http, configuration);
+    }
+
+    public DocumentUploadGateway documentUpload() {
+        return new DocumentUploadGateway(http, configuration);
     }
 }

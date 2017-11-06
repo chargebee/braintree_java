@@ -1,3 +1,109 @@
+## 2.73.0
+
+* Add iDEAL webhook support
+* Add `IDEAL_PAYMENT` to `PaymentInstrumentType`
+* Add document upload API
+* Add AuthorizationAdjustment class and `authorizationAdjustments` to Transaction
+* Coinbase is no longer a supported payment method. `PAYMENT_METHOD_NO_LONGER_SUPPORTED` will be returned for Coinbase operations
+* Add facilitated transaction details to Transaction if present
+* Add `bin` to `ApplePayCard`
+* Add `submitForSettlement` to `SubscriptionGateway.retryCharge`
+* Add `options` -> `paypal` -> `description` for creating and updating subscriptions
+* Add `accept` method for the Dispute API
+* Add `addTextEvidence` method for the Dispute API
+* Add `addFileEvidence` method for the Dispute API
+* Add `finalize` method for the Dispute API
+* Add `find` method for the Dispute API
+* Add `removeEvidence` method for the Dispute API
+* Add `search` method for the Dispute API
+
+## 2.72.1
+
+* Add additional properties to `PaymentMethodNonce`
+
+## 2.72.0
+
+* Add `skipAvs` and `skipCvv` options to `TransactionOptionsRequest`
+* `CreditCardVerification` now contains `amount` and `currencyIsoCode`
+* Add iDEAL support
+* Add Masterpass support
+* Add Visa Checkout support
+* Add support for additional PayPal options when vaulting a PayPal Order
+* Stop sending `account_description` field from us bank accounts
+* Add `ConnectedMerchantStatusTransitioned` and `ConnectedMerchantPayPalStatusChanged` Auth webhooks
+
+## 2.71.0
+* Stop sending account_description field from us bank accounts
+
+## 2.70.0
+* Add functionality to list all merchant accounts for a merchant with `MerchantAccount.all`.
+* Update UsBank tests to use legal routing numbers.
+* Add option `skip_advanced_fraud_check` for transaction flows.
+* Raise an exception if fetching pages of results times out during a transaction search.
+
+## 2.69.0
+* Fix `UsBankAccount` support for `Customer`s
+* Throw `ConfigurationException` for missing credentials
+* Refactor payment method grant and revoke APIs to accept `PaymentMethodGrantRequest` and `PaymentMethodGrantRevokeRequest` objects as parameters
+
+## 2.68.0
+* Add 'UsBankAccount' payment method
+
+## 2.67.0
+* Use TLS v1.2 by default and fallback to TLS
+* Add getPlanId() to SubscriptionStatusEvent
+* Add createdAt to subscription search
+
+## 2.66.0
+* Log encoding error instead of printing stack trace
+* Reuse SSLSocketFactory for http requests
+* Allow proxy objects to be used to specify proxy config
+* Add currency iso code
+* Expose credit card product ID
+* Add validation error for verifications with submerchants
+
+## 2.65.0
+* Allow passing OAuth scopes to `Merchant#create`
+* Support passing `transaction_source` for setting moto or recurring ECI flag
+* Add support for passing risk data
+* Allow updating default_payment_method on Customer
+
+## 2.64.0
+* Add OrderId to refund
+* Add 3DS Pass thru support
+* Add verificiation amount option to Payment Method request
+* Expose ids in resource collections
+
+## 2.63.0
+* Add method of revoking OAuth access tokens.
+
+## 2.62.0
+* Add transaction `UpdateDetails`
+* Add ssnLast4 to merchant account individual details
+* Support for Too Many Requests response codes
+
+## 2.61.0
+* Add new landing_page param to OAuthConnectUrlRequest
+
+## 2.60.0
+* Add getSubscriptions method to PaymentMethod interface (Thanks @singhalkul!)
+* Add establishedOn attribute to partner business data
+* Allow passing companyName and currencies to `Merchant#create`
+
+## 2.59.0
+* Remove java.util.logging.ConsoleHandler
+* Add isInvalid error code for addresses
+
+## 2.58.0
+* Add timeout attribute to Configuration
+* Adds shared vault parameters
+
+## 2.57.0
+* Add support for logging. Thanks @yatsenko-ihor!
+
+## 2.56.0
+* Add AccountUpdaterDailyReport webhook parsing
+
 ## 2.55.0
 * Add support for OSGi bundling. Thanks, @lburgazzoli!
 

@@ -10,6 +10,9 @@ public class TransactionOptionsRequest extends Request {
     private Boolean submitForSettlement;
     private String venmoSdkSession;
     private String payeeEmail;
+    private Boolean skipAdvancedFraudChecking;
+    private Boolean skipAvs;
+    private Boolean skipCvv;
     private TransactionOptionsPayPalRequest transactionOptionsPayPalRequest;
     private TransactionOptionsAmexRewardsRequest transactionOptionsAmexRewardsRequest;
     private TransactionOptionsThreeDSecureRequest transactionOptionsThreeDSecureRequest;
@@ -62,6 +65,21 @@ public class TransactionOptionsRequest extends Request {
         return this;
     }
 
+    public TransactionOptionsRequest skipAdvancedFraudChecking(Boolean skipAdvancedFraudChecking) {
+        this.skipAdvancedFraudChecking = skipAdvancedFraudChecking;
+        return this;
+    }
+
+    public TransactionOptionsRequest skipAvs(Boolean skipAvs) {
+        this.skipAvs = skipAvs;
+        return this;
+    }
+
+    public TransactionOptionsRequest skipCvv(Boolean skipCvv) {
+        this.skipCvv = skipCvv;
+        return this;
+    }
+
     public TransactionOptionsPayPalRequest paypal() {
         transactionOptionsPayPalRequest = new TransactionOptionsPayPalRequest(this);
         return transactionOptionsPayPalRequest;
@@ -102,6 +120,9 @@ public class TransactionOptionsRequest extends Request {
             addElement("submitForSettlement", submitForSettlement).
             addElement("venmoSdkSession", venmoSdkSession).
             addElement("payeeEmail", payeeEmail).
+            addElement("skipAdvancedFraudChecking", skipAdvancedFraudChecking).
+            addElement("skipAvs", skipAvs).
+            addElement("skipCvv", skipCvv).
             addElement("threeDSecure", transactionOptionsThreeDSecureRequest).
             addElement("paypal", transactionOptionsPayPalRequest).
             addElement("payWithAmexRewards", transactionOptionsAmexRewardsRequest);

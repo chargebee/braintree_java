@@ -5,9 +5,9 @@ import com.braintreegateway.testhelpers.TestHelper;
 import com.braintreegateway.SandboxValues.CreditCardNumber;
 import com.braintreegateway.util.NodeWrapper;
 import com.braintreegateway.util.NodeWrapperFactory;
-import org.junit.Before;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -15,14 +15,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class CreditCardVerificationIT {
-
-    private BraintreeGateway gateway;
-
-    @Before
-    public void createGateway() {
-        this.gateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_id", "integration_public_key", "integration_private_key");
-    }
+public class CreditCardVerificationIT extends IntegrationTest {
 
     @Test
     public void createVerification() {
@@ -99,6 +92,8 @@ public class CreditCardVerificationIT {
         builder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         builder.append("<api-error-response>");
         builder.append("  <verification>");
+        builder.append("    <amount>1.00</amount>");
+        builder.append("    <currency-iso-code>USD</currency-iso-code>");
         builder.append("    <avs-error-response-code nil=\"true\"></avs-error-response-code>");
         builder.append("    <avs-postal-code-response-code>I</avs-postal-code-response-code>");
         builder.append("    <status>processor_declined</status>");
@@ -124,6 +119,8 @@ public class CreditCardVerificationIT {
 
         NodeWrapper verificationNode = (NodeWrapperFactory.instance.create(builder.toString())).findFirst("verification");
         CreditCardVerification verification = new CreditCardVerification(verificationNode);
+        assertEquals(new BigDecimal("1.00"), verification.getAmount());
+        assertEquals("USD", verification.getCurrencyIsoCode());
         assertEquals(null, verification.getAvsErrorResponseCode());
         assertEquals("I", verification.getAvsPostalCodeResponseCode());
         assertEquals(CreditCardVerification.Status.PROCESSOR_DECLINED, verification.getStatus());
@@ -306,5 +303,6 @@ public class CreditCardVerificationIT {
         assertEquals(CreditCard.Prepaid.UNKNOWN, verification.getCreditCard().getPrepaid());
         assertEquals("Unknown", verification.getCreditCard().getCountryOfIssuance());
         assertEquals("Unknown", verification.getCreditCard().getIssuingBank());
+        assertEquals("Unknown", verification.getCreditCard().getProductId());
     }
 }

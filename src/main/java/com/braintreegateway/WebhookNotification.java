@@ -11,6 +11,8 @@ public class WebhookNotification {
         PARTNER_MERCHANT_DISCONNECTED("partner_merchant_disconnected"),
         PARTNER_MERCHANT_CONNECTED("partner_merchant_connected"),
         PARTNER_MERCHANT_DECLINED("partner_merchant_declined"),
+        CONNECTED_MERCHANT_STATUS_TRANSITIONED("connected_merchant_status_transitioned"),
+        CONNECTED_MERCHANT_PAYPAL_STATUS_CHANGED("connected_merchant_paypal_status_changed"),
         SUB_MERCHANT_ACCOUNT_APPROVED("sub_merchant_account_approved"),
         SUB_MERCHANT_ACCOUNT_DECLINED("sub_merchant_account_declined"),
         SUBSCRIPTION_CANCELED("subscription_canceled"),
@@ -21,11 +23,16 @@ public class WebhookNotification {
         SUBSCRIPTION_WENT_ACTIVE("subscription_went_active"),
         SUBSCRIPTION_WENT_PAST_DUE("subscription_went_past_due"),
         TRANSACTION_DISBURSED("transaction_disbursed"),
+        TRANSACTION_SETTLED("transaction_settled"),
+        TRANSACTION_SETTLEMENT_DECLINED("transaction_settlement_declined"),
         DISBURSEMENT_EXCEPTION("disbursement_exception"),
         DISBURSEMENT("disbursement"),
         DISPUTE_OPENED("dispute_opened"),
         DISPUTE_LOST("dispute_lost"),
         DISPUTE_WON("dispute_won"),
+        ACCOUNT_UPDATER_DAILY_REPORT("account_updater_daily_report"),
+        IDEAL_PAYMENT_COMPLETE("ideal_payment_complete"),
+        IDEAL_PAYMENT_FAILED("ideal_payment_failed"),
         UNRECOGNIZED("unrecognized");
 
         private final String name;
@@ -49,6 +56,10 @@ public class WebhookNotification {
     private Kind kind;
     private Calendar timestamp;
     private PartnerMerchant partnerMerchant;
+    private AccountUpdaterDailyReport accountUpdaterDailyReport;
+    private ConnectedMerchantStatusTransitioned connectedMerchantStatusTransitioned;
+    private ConnectedMerchantPayPalStatusChanged connectedMerchantPayPalStatusChanged;
+    private IdealPayment idealPayment;
 
     public WebhookNotification(NodeWrapper node) {
         this.kind = EnumUtils.findByName(Kind.class, node.findString("kind"), Kind.UNRECOGNIZED);
@@ -82,6 +93,22 @@ public class WebhookNotification {
 
         if (wrapperNode.findFirst("partner-merchant") != null) {
             this.partnerMerchant = new PartnerMerchant(wrapperNode.findFirst("partner-merchant"));
+        }
+
+        if (wrapperNode.findFirst("connected-merchant-status-transitioned") != null) {
+            this.connectedMerchantStatusTransitioned = new ConnectedMerchantStatusTransitioned(wrapperNode.findFirst("connected-merchant-status-transitioned"));
+        }
+
+        if (wrapperNode.findFirst("connected-merchant-paypal-status-changed") != null) {
+            this.connectedMerchantPayPalStatusChanged = new ConnectedMerchantPayPalStatusChanged(wrapperNode.findFirst("connected-merchant-paypal-status-changed"));
+        }
+
+        if (wrapperNode.findFirst("account-updater-daily-report") != null) {
+            this.accountUpdaterDailyReport = new AccountUpdaterDailyReport(wrapperNode.findFirst("account-updater-daily-report"));
+        }
+
+        if (wrapperNode.findFirst("ideal-payment") != null) {
+            this.idealPayment = new IdealPayment(wrapperNode.findFirst("ideal-payment"));
         }
 
         if (!wrapperNode.isSuccess()) {
@@ -123,5 +150,21 @@ public class WebhookNotification {
 
     public PartnerMerchant getPartnerMerchant() {
         return this.partnerMerchant;
+    }
+
+    public ConnectedMerchantStatusTransitioned getConnectedMerchantStatusTransitioned() {
+        return this.connectedMerchantStatusTransitioned;
+    }
+
+    public ConnectedMerchantPayPalStatusChanged getConnectedMerchantPayPalStatusChanged() {
+        return this.connectedMerchantPayPalStatusChanged;
+    }
+
+    public AccountUpdaterDailyReport getAccountUpdaterDailyReport() {
+        return this.accountUpdaterDailyReport;
+    }
+
+    public IdealPayment getIdealPayment() {
+        return this.idealPayment;
     }
 }

@@ -26,12 +26,14 @@ public class TransactionRequest extends Request {
     private String paymentMethodToken;
     private String purchaseOrderNumber;
     private Boolean recurring;
+    private String source;
     private String shippingAddressId;
     private String billingAddressId;
     private TransactionDescriptorRequest descriptorRequest;
     private TransactionIndustryRequest industryRequest;
     private TransactionAddressRequest shippingAddressRequest;
     private TransactionOptionsRequest transactionOptionsRequest;
+    private TransactionThreeDSecurePassThruRequest threeDSecurePassThruRequest;
     private BigDecimal taxAmount;
     private Boolean taxExempt;
     private Type type;
@@ -41,6 +43,13 @@ public class TransactionRequest extends Request {
 
     private String threeDSecureToken;
     private Boolean threeDSecureTransaction;
+
+    private String sharedPaymentMethodToken;
+    private String sharedCustomerId;
+    private String sharedShippingAddressId;
+    private String sharedBillingAddressId;
+
+    private RiskDataTransactionRequest riskDataTransactionRequest;
 
     public TransactionRequest() {
         this.customFields = new HashMap<String, String>();
@@ -132,6 +141,11 @@ public class TransactionRequest extends Request {
         return transactionOptionsRequest;
     }
 
+    public TransactionThreeDSecurePassThruRequest threeDSecurePassThru() {
+        threeDSecurePassThruRequest = new TransactionThreeDSecurePassThruRequest(this);
+        return threeDSecurePassThruRequest;
+    }
+
     public TransactionRequest orderId(String orderId) {
         this.orderId = orderId;
         return this;
@@ -149,6 +163,11 @@ public class TransactionRequest extends Request {
 
     public TransactionRequest recurring(Boolean recurring) {
         this.recurring = recurring;
+        return this;
+    }
+
+    public TransactionRequest transactionSource(String source) {
+        this.source = source;
         return this;
     }
 
@@ -191,6 +210,31 @@ public class TransactionRequest extends Request {
       this.threeDSecureTransaction = true;
       this.threeDSecureToken = threeDSecureToken;
       return this;
+    }
+
+    public TransactionRequest sharedPaymentMethodToken(String sharedPaymentMethodToken) {
+        this.sharedPaymentMethodToken = sharedPaymentMethodToken;
+        return this;
+    }
+
+    public TransactionRequest sharedCustomerId(String sharedCustomerId) {
+        this.sharedCustomerId = sharedCustomerId;
+        return this;
+    }
+
+    public TransactionRequest sharedShippingAddressId(String sharedShippingAddressId) {
+        this.sharedShippingAddressId = sharedShippingAddressId;
+        return this;
+    }
+
+    public TransactionRequest sharedBillingAddressId(String sharedBillingAddressId) {
+        this.sharedBillingAddressId = sharedBillingAddressId;
+        return this;
+    }
+
+    public RiskDataTransactionRequest riskData() {
+        riskDataTransactionRequest = new RiskDataTransactionRequest(this);
+        return riskDataTransactionRequest;
     }
 
     @Override
@@ -236,11 +280,18 @@ public class TransactionRequest extends Request {
             addElement("billing", billingAddressRequest).
             addElement("shipping", shippingAddressRequest).
             addElement("options", transactionOptionsRequest).
+            addElement("threeDSecurePassThru", threeDSecurePassThruRequest).
             addElement("recurring", recurring).
+            addElement("transactionSource", source).
             addElement("deviceSessionId", deviceSessionId).
             addElement("fraudMerchantId", fraudMerchantId).
             addElement("venmoSdkPaymentMethodCode", venmoSdkPaymentMethodCode).
-            addElement("serviceFeeAmount", serviceFeeAmount);
+            addElement("sharedPaymentMethodToken", sharedPaymentMethodToken).
+            addElement("sharedCustomerId", sharedCustomerId).
+            addElement("sharedShippingAddressId", sharedShippingAddressId).
+            addElement("sharedBillingAddressId", sharedBillingAddressId).
+            addElement("serviceFeeAmount", serviceFeeAmount).
+            addElement("riskData", riskDataTransactionRequest);
 
         if (!customFields.isEmpty()) {
             builder.addElement("customFields", customFields);

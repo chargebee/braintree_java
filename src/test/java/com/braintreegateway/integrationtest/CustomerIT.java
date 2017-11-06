@@ -6,22 +6,16 @@ import com.braintreegateway.exceptions.NotFoundException;
 import com.braintreegateway.test.Nonce;
 import com.braintreegateway.test.VenmoSdk;
 import com.braintreegateway.testhelpers.TestHelper;
-import org.junit.Before;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static org.junit.Assert.*;
 
 @SuppressWarnings("deprecation")
-public class CustomerIT {
-
-    private BraintreeGateway gateway;
-
-    @Before
-    public void createGateway() {
-        this.gateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_id", "integration_public_key", "integration_private_key");
-    }
+public class CustomerIT extends IntegrationTest {
 
     @Test
     public void transparentRedirectURLForCreate() {
@@ -167,6 +161,22 @@ public class CustomerIT {
     }
 
     @Test
+    public void createWithRiskDataParams() {
+        CustomerRequest request = new CustomerRequest().
+            creditCard().
+                number("4111111111111111").
+                expirationDate("05/12").
+                done().
+            riskData().
+                customerBrowser("IE6").
+                customerIP("192.168.0.1").
+                done();
+        Result<Customer> result = gateway.customer().create(request);
+
+        assertTrue(result.isSuccess());
+    }
+
+    @Test
     public void createWithCustomFields() {
         CustomerRequest request = new CustomerRequest().
             customField("store_me", "custom value").
@@ -263,6 +273,26 @@ public class CustomerIT {
         assertEquals("411111", creditCard.getBin());
         assertEquals("1111", creditCard.getLast4());
         assertEquals("05/2012", creditCard.getExpirationDate());
+    }
+
+    @Test
+    public void createWithValidCreditCardAndVerificationAmount() {
+        CustomerRequest request = new CustomerRequest();
+        request.firstName("Fred").
+            creditCard().
+                cardholderName("Fred Jones").
+                number("4111111111111111").
+                cvv("123").
+                expirationDate("05/12").
+                options().
+                    verifyCard(true).
+                    verificationAmount("6.00").
+                    done().
+                done().
+            lastName("Jones");
+
+        Result<Customer> result = gateway.customer().create(request);
+        assertTrue(result.isSuccess());
     }
 
     @Test
@@ -436,6 +466,44 @@ public class CustomerIT {
     }
 
     @Test
+    public void createWithOrderPaymentPayPalAccountNonceAndPayPalOptions() {
+        String nonce = TestHelper.generateOrderPaymentPayPalNonce(gateway);
+        CustomerRequest request = new CustomerRequest().
+            paymentMethodNonce(nonce).
+            options().
+                paypal().
+                    payeeEmail("payee@example.com").
+                    orderId("merchant-order-id").
+                    customField("custom merchant field").
+                    description("merchant description").
+                    amount(new BigDecimal("1.23")).
+                    done().
+                done();
+
+        Result<Customer> result = gateway.customer().create(request);
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.getTarget().getPayPalAccounts().size());
+    }
+
+    @Test
+    public void createWithUsBankAccountNonce() {
+        String nonce = TestHelper.generateValidUsBankAccountNonce(gateway);
+        CustomerRequest request = new CustomerRequest().
+            paymentMethodNonce(nonce);
+
+        Result<Customer> result = gateway.customer().create(request);
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.getTarget().getUsBankAccounts().size());
+
+        UsBankAccount usBankAccount = result.getTarget().getUsBankAccounts().get(0);
+        assertEquals("021000021", usBankAccount.getRoutingNumber());
+        assertEquals("1234", usBankAccount.getLast4());
+        assertEquals("checking", usBankAccount.getAccountType());
+        assertEquals("Dan Schulman", usBankAccount.getAccountHolderName());
+        assertTrue(Pattern.matches(".*CHASE.*", usBankAccount.getBankName()));
+    }
+
+    @Test
     public void createCustomerFromTransparentRedirect() {
         CustomerRequest request = new CustomerRequest().firstName("John");
         CustomerRequest trParams = new CustomerRequest().
@@ -501,6 +569,28 @@ public class CustomerIT {
     }
 
     @Test
+    public void findUsBankAccountFromCustomer() {
+        String nonce = TestHelper.generateValidUsBankAccountNonce(gateway);
+        CustomerRequest request = new CustomerRequest().
+            paymentMethodNonce(nonce);
+
+        Result<Customer> result = gateway.customer().create(request);
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.getTarget().getUsBankAccounts().size());
+
+        Customer customer = result.getTarget();
+        Customer foundCustomer = gateway.customer().find(customer.getId());
+        assertEquals(customer.getId(), foundCustomer.getId());
+
+        UsBankAccount usBankAccount = customer.getUsBankAccounts().get(0);
+        assertEquals("021000021", usBankAccount.getRoutingNumber());
+        assertEquals("1234", usBankAccount.getLast4());
+        assertEquals("checking", usBankAccount.getAccountType());
+        assertEquals("Dan Schulman", usBankAccount.getAccountHolderName());
+        assertTrue(Pattern.matches(".*CHASE.*", usBankAccount.getBankName()));
+    }
+
+    @Test
     public void findWithEmptyIds() {
         try {
             gateway.customer().find(" ");
@@ -522,6 +612,7 @@ public class CustomerIT {
         assertEquals(1, foundCustomer.getApplePayCards().size());
         ApplePayCard card = foundCustomer.getApplePayCards().get(0);
         assertNotNull(card);
+        assertNotNull(card.getBin());
         assertNotNull(card.getExpirationMonth());
         assertEquals(1, foundCustomer.getPaymentMethods().size());
     }
@@ -575,20 +666,13 @@ public class CustomerIT {
     }
 
     @Test
-    public void createWithCoinbaseAccount() {
+    public void createWithCoinbaseAccount_noLongerSupported() {
         CustomerRequest request = new CustomerRequest().
             paymentMethodNonce(Nonce.Coinbase);
-        Customer customer = gateway.customer().create(request).getTarget();
-
-        Customer foundCustomer = gateway.customer().find(customer.getId());
-        assertEquals(customer.getId(), foundCustomer.getId());
-        assertNotNull(foundCustomer.getCoinbaseAccounts());
-        assertEquals(1, foundCustomer.getCoinbaseAccounts().size());
-        CoinbaseAccount account = foundCustomer.getCoinbaseAccounts().get(0);
-        assertNotNull(account);
-        assertNotNull(account.getUserId());
-        assertNotNull(account.getToken());
-        assertEquals(1, foundCustomer.getPaymentMethods().size());
+        Result<Customer> customerResult = gateway.customer().create(request);
+        assertFalse(customerResult.isSuccess());
+        assertEquals(ValidationErrorCode.PAYMENT_METHOD_NO_LONGER_SUPPORTED,
+                customerResult.getErrors().forObject("coinbaseAccount").onField("base").get(0).getCode());
     }
 
     @Test
@@ -786,6 +870,87 @@ public class CustomerIT {
     }
 
     @Test
+    public void updateDefaultPaymentMethodInOptions() {
+        CustomerRequest request = new CustomerRequest().
+            firstName("Mark").
+            lastName("Jones");
+
+        Customer customer = gateway.customer().create(request).getTarget();
+
+        String token1 = "TOKEN-" + new Random().nextInt();
+
+        PaymentMethodRequest request1 = new PaymentMethodRequest().
+            paymentMethodNonce(Nonce.TransactableVisa).
+            token(token1).
+            customerId(customer.getId());
+
+        Result<? extends PaymentMethod> result1 = gateway.paymentMethod().create(request1);
+        assertTrue(result1.getTarget().isDefault());
+
+        String token2 = "TOKEN-" + new Random().nextInt();
+
+        PaymentMethodRequest request2 = new PaymentMethodRequest().
+            paymentMethodNonce(Nonce.TransactableMasterCard).
+            token(token2).
+            customerId(customer.getId());
+
+        gateway.paymentMethod().create(request2);
+        PaymentMethod newPaymentMethod = gateway.paymentMethod().find(token2);
+        assertFalse(newPaymentMethod.isDefault());
+
+        CustomerRequest updateRequest = new CustomerRequest().
+            creditCard().
+                options().
+                    updateExistingToken(token2).
+                    makeDefault(true).
+                    done().
+                done();
+
+        gateway.customer().update(customer.getId(), updateRequest).getTarget();
+
+        newPaymentMethod = gateway.paymentMethod().find(token2);
+        assertTrue(newPaymentMethod.isDefault());
+    }
+
+    @Test
+    public void updateDefaultPaymentMethod() {
+        CustomerRequest request = new CustomerRequest().
+            firstName("Mark").
+            lastName("Jones");
+
+        Customer customer = gateway.customer().create(request).getTarget();
+
+        String token1 = "TOKEN-" + new Random().nextInt();
+
+        PaymentMethodRequest request1 = new PaymentMethodRequest().
+            paymentMethodNonce(Nonce.TransactableVisa).
+            token(token1).
+            customerId(customer.getId());
+
+        Result<? extends PaymentMethod> result1 = gateway.paymentMethod().create(request1);
+        assertTrue(result1.getTarget().isDefault());
+
+        String token2 = "TOKEN-" + new Random().nextInt();
+
+        PaymentMethodRequest request2 = new PaymentMethodRequest().
+            paymentMethodNonce(Nonce.TransactableMasterCard).
+            token(token2).
+            customerId(customer.getId());
+
+        gateway.paymentMethod().create(request2);
+        PaymentMethod newPaymentMethod = gateway.paymentMethod().find(token2);
+        assertFalse(newPaymentMethod.isDefault());
+
+        CustomerRequest updateRequest = new CustomerRequest().
+            defaultPaymentMethodToken(token2);
+
+        gateway.customer().update(customer.getId(), updateRequest).getTarget();
+
+        newPaymentMethod = gateway.paymentMethod().find(token2);
+        assertTrue(newPaymentMethod.isDefault());
+    }
+
+    @Test
     public void updateWithExistingCreditCardAndAddress() {
         CustomerRequest request = new CustomerRequest().
             firstName("Mark").
@@ -841,6 +1006,39 @@ public class CustomerIT {
     }
 
     @Test
+    public void updateWithExistingCreditCardFailsOnDuplicatePaymentMethod() {
+        CustomerRequest request = new CustomerRequest().
+            firstName("Mark").
+            lastName("Jones").
+            creditCard().
+                number("4111111111111111").
+                expirationDate("12/12").
+                done();
+
+        Customer customer = gateway.customer().create(request).getTarget();
+        CreditCard creditCard = customer.getCreditCards().get(0);
+
+        CustomerRequest updateRequest = new CustomerRequest().
+            firstName("Jane").
+            lastName("Doe").
+            creditCard().
+                number("4111111111111111").
+                expirationDate("12/12").
+                options().
+                    updateExistingToken(creditCard.getToken()).
+                    failOnDuplicatePaymentMethod(true).
+                    done().
+                done();
+
+        Result<Customer> result = gateway.customer().update(customer.getId(), updateRequest);
+        assertFalse(result.isSuccess());
+        assertEquals(
+                ValidationErrorCode.CREDIT_CARD_DUPLICATE_CARD_EXISTS,
+                result.getErrors().forObject("customer").forObject("creditCard").onField("number").get(0).getCode()
+        );
+    }
+
+    @Test
     public void updateWithNewCreditCardAndExistingAddress() {
         Customer customer = gateway.customer().create(new CustomerRequest()).getTarget();
         AddressRequest addressRequest = new AddressRequest().
@@ -860,6 +1058,24 @@ public class CustomerIT {
 
         assertEquals(address.getId(), updatedAddress.getId());
         assertEquals("John", updatedAddress.getFirstName());
+    }
+
+    @Test
+    public void updateWithNewCreditCardAndVerificationAmount() {
+        Customer customer = gateway.customer().create(new CustomerRequest()).getTarget();
+
+        CustomerRequest request = new CustomerRequest().
+            creditCard().
+                number("4111111111111111").
+                expirationDate("12/12").
+                options().
+                    verifyCard(true).
+                    verificationAmount("6.00").
+                    done().
+                done();
+
+        Result<Customer> result = gateway.customer().create(request);
+        assertTrue(result.isSuccess());
     }
 
     @Test

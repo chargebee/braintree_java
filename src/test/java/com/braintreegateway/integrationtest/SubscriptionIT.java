@@ -17,15 +17,13 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-public class SubscriptionIT implements MerchantAccountTestConstants {
+public class SubscriptionIT extends IntegrationTest implements MerchantAccountTestConstants {
 
-    private BraintreeGateway gateway;
     private Customer customer;
     private CreditCard creditCard;
 
     @Before
-    public void createGateway() {
-        this.gateway = new BraintreeGateway(Environment.DEVELOPMENT, "integration_merchant_id", "integration_public_key", "integration_private_key");
+    public void createCustomer() {
         CustomerRequest request = new CustomerRequest();
         request.
                 creditCard().
@@ -34,7 +32,7 @@ public class SubscriptionIT implements MerchantAccountTestConstants {
                 expirationDate("05/12").
                 done();
 
-        Result<Customer> result = gateway.customer().create(request);
+        Result<Customer> result = this.gateway.customer().create(request);
         assertTrue(result.isSuccess());
         this.customer = result.getTarget();
         this.creditCard = customer.getCreditCards().get(0);
@@ -86,6 +84,8 @@ public class SubscriptionIT implements MerchantAccountTestConstants {
         assertEquals(Subscription.Source.API, subscription.getStatusHistory().get(0).getSource());
         assertEquals(new BigDecimal("12.34"), subscription.getStatusHistory().get(0).getPrice());
         assertEquals(new BigDecimal("0.00"), subscription.getStatusHistory().get(0).getBalance());
+        assertEquals("USD", subscription.getStatusHistory().get(0).getCurrencyIsoCode());
+        assertEquals("integration_trialless_plan", subscription.getStatusHistory().get(0).getPlanId());
 
         TestHelper.assertDatesEqual(expectedBillingPeriodEndDate, subscription.getBillingPeriodEndDate());
         TestHelper.assertDatesEqual(expectedBillingPeriodStartDate, subscription.getBillingPeriodStartDate());
@@ -1137,6 +1137,47 @@ public class SubscriptionIT implements MerchantAccountTestConstants {
     }
 
     @Test
+    public void updateWithDescription() {
+        String nonce = TestHelper.generateFuturePaymentPayPalNonce(gateway);
+        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
+        assertTrue(customerResult.isSuccess());
+        Customer customer = customerResult.getTarget();
+
+        PaymentMethodRequest paymentMethodRequest = new PaymentMethodRequest().
+            customerId(customer.getId()).
+            paymentMethodNonce(nonce);
+
+        Result<? extends PaymentMethod> paypalResult = gateway.paymentMethod().create(paymentMethodRequest);
+        assertTrue(paypalResult.isSuccess());
+
+        PaymentMethod paymentMethod = paypalResult.getTarget();
+
+        Plan plan = PlanFixture.PLAN_WITH_TRIAL;
+        SubscriptionRequest request = new SubscriptionRequest().
+                paymentMethodToken(paymentMethod.getToken()).
+                planId(plan.getId()).
+                numberOfBillingCycles(10).
+                options().
+                paypal().
+                description("A great product").
+                done().
+                done();
+
+        Subscription subscription = gateway.subscription().create(request).getTarget();
+
+        SubscriptionRequest updateRequest = new SubscriptionRequest().
+                options().
+                paypal().
+                description("An incredible product").
+                done().
+                done();
+
+        Subscription updatedSubscription = gateway.subscription().update(subscription.getId(), updateRequest).getTarget();
+
+        assertEquals("An incredible product", updatedSubscription.getDescription());
+    }
+
+    @Test
     public void createWithBadPlanId() {
         SubscriptionRequest createRequest = new SubscriptionRequest().
                 paymentMethodToken(creditCard.getToken()).
@@ -1183,6 +1224,43 @@ public class SubscriptionIT implements MerchantAccountTestConstants {
         assertEquals("123*123456789012345678", transaction.getDescriptor().getName());
         assertEquals("3334445555", transaction.getDescriptor().getPhone());
         assertEquals("ebay.com", transaction.getDescriptor().getUrl());
+    }
+
+    @Test
+    public void createWithDescription() {
+        String nonce = TestHelper.generateFuturePaymentPayPalNonce(gateway);
+        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
+        assertTrue(customerResult.isSuccess());
+        Customer customer = customerResult.getTarget();
+
+        PaymentMethodRequest paymentMethodRequest = new PaymentMethodRequest().
+            customerId(customer.getId()).
+            paymentMethodNonce(nonce);
+
+        Result<? extends PaymentMethod> paypalResult = gateway.paymentMethod().create(paymentMethodRequest);
+        assertTrue(paypalResult.isSuccess());
+
+        PaymentMethod paymentMethod = paypalResult.getTarget();
+
+        Plan plan = PlanFixture.PLAN_WITHOUT_TRIAL;
+        SubscriptionRequest request = new SubscriptionRequest().
+                paymentMethodToken(paymentMethod.getToken()).
+                planId(plan.getId()).
+                options().
+                paypal().
+                description("A great product").
+                done().
+                done();
+
+        Result<Subscription> createResult = gateway.subscription().create(request);
+        assertTrue(createResult.isSuccess());
+
+        Subscription subscription = createResult.getTarget();
+        assertEquals("A great product", subscription.getDescription());
+
+        Transaction transaction = subscription.getTransactions().get(0);
+        PayPalDetails paypalDetails = transaction.getPayPalDetails();
+        assertEquals("A great product", paypalDetails.getDescription());
     }
 
     @Test
@@ -1276,6 +1354,36 @@ public class SubscriptionIT implements MerchantAccountTestConstants {
         assertTrue(cancelResult.isSuccess());
         assertEquals(Subscription.Status.CANCELED, cancelResult.getTarget().getStatus());
         assertEquals(Subscription.Status.CANCELED, gateway.subscription().find(createResult.getTarget().getId()).getStatus());
+    }
+
+    @Test
+    public void searchCreatedAt() {
+        SubscriptionRequest request = new SubscriptionRequest().
+                paymentMethodToken(creditCard.getToken()).
+                planId(PlanFixture.PLAN_WITH_TRIAL.getId());
+
+        Subscription subscription = gateway.subscription().create(request).getTarget();
+
+        Calendar yesterday = Calendar.getInstance();
+        yesterday.setTime(new Date(System.currentTimeMillis() - 24*60*60*1000));
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.setTime(new Date(System.currentTimeMillis() + 24*60*60*1000));
+        Calendar dayAfterTomorrow = Calendar.getInstance();
+        dayAfterTomorrow.setTime(new Date(System.currentTimeMillis() + 2*24*60*60*1000));
+
+        SubscriptionSearchRequest emptySearch = new SubscriptionSearchRequest().
+            createdAt().between(tomorrow,dayAfterTomorrow);
+
+        ResourceCollection<Subscription> emptyResults = gateway.subscription().search(emptySearch);
+
+        assertTrue(emptyResults.getMaximumSize() == 0);
+
+        SubscriptionSearchRequest search = new SubscriptionSearchRequest().
+            createdAt().between(yesterday,tomorrow);
+
+        ResourceCollection<Subscription> results = gateway.subscription().search(search);
+
+        assertTrue(results.getMaximumSize() > 0);
     }
 
     @Test
@@ -1742,6 +1850,50 @@ public class SubscriptionIT implements MerchantAccountTestConstants {
         String xml = "<subscription><trial-duration-unit>foobar</trial-duration-unit></subscription>";
         Subscription transaction = new Subscription(NodeWrapperFactory.instance.create(xml));
         assertEquals(Subscription.DurationUnit.UNRECOGNIZED, transaction.getTrialDurationUnit());
+    }
+
+    @Test
+    public void retryChargeWithSubmitForSettlement() {
+        SubscriptionRequest request = new SubscriptionRequest().
+                paymentMethodToken(creditCard.getToken()).
+                planId(PlanFixture.PLAN_WITHOUT_TRIAL.getId());
+
+        Subscription subscription = gateway.subscription().create(request).getTarget();
+
+        makePastDue(subscription, 1);
+
+        Result<Transaction> result = gateway.subscription().retryCharge(subscription.getId(), true);
+        assertTrue(result.isSuccess());
+
+        Transaction transaction = result.getTarget();
+        assertEquals(subscription.getPrice(), transaction.getAmount());
+        assertNotNull(transaction.getProcessorAuthorizationCode());
+        assertEquals(Transaction.Type.SALE, transaction.getType());
+        assertEquals(Transaction.Status.SUBMITTED_FOR_SETTLEMENT, transaction.getStatus());
+        assertEquals(Calendar.getInstance().get(Calendar.YEAR), transaction.getCreatedAt().get(Calendar.YEAR));
+        assertEquals(Calendar.getInstance().get(Calendar.YEAR), transaction.getUpdatedAt().get(Calendar.YEAR));
+    }
+
+    @Test
+    public void retryChargeWithSubmitForSettlementAndAmount() {
+        SubscriptionRequest request = new SubscriptionRequest().
+                paymentMethodToken(creditCard.getToken()).
+                planId(PlanFixture.PLAN_WITHOUT_TRIAL.getId());
+
+        Subscription subscription = gateway.subscription().create(request).getTarget();
+
+        makePastDue(subscription, 1);
+
+        Result<Transaction> result = gateway.subscription().retryCharge(subscription.getId(), TransactionAmount.AUTHORIZE.amount, true);
+        assertTrue(result.isSuccess());
+
+        Transaction transaction = result.getTarget();
+        assertEquals(TransactionAmount.AUTHORIZE.amount, transaction.getAmount());
+        assertNotNull(transaction.getProcessorAuthorizationCode());
+        assertEquals(Transaction.Type.SALE, transaction.getType());
+        assertEquals(Transaction.Status.SUBMITTED_FOR_SETTLEMENT, transaction.getStatus());
+        assertEquals(Calendar.getInstance().get(Calendar.YEAR), transaction.getCreatedAt().get(Calendar.YEAR));
+        assertEquals(Calendar.getInstance().get(Calendar.YEAR), transaction.getUpdatedAt().get(Calendar.YEAR));
     }
 
     @Test

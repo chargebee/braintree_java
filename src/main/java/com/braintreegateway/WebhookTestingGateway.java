@@ -44,6 +44,8 @@ public class WebhookTestingGateway {
             case SUB_MERCHANT_ACCOUNT_APPROVED: return merchantAccountXmlActive(id);
             case SUB_MERCHANT_ACCOUNT_DECLINED: return merchantAccountXmlDeclined(id);
             case TRANSACTION_DISBURSED: return transactionXml(id);
+            case TRANSACTION_SETTLED: return transactionSettledXml(id);
+            case TRANSACTION_SETTLEMENT_DECLINED: return transactionSettlementDeclinedXml(id);
             case DISBURSEMENT: return disbursementXml(id);
             case DISPUTE_OPENED: return disputeOpenedXml(id);
             case DISPUTE_LOST: return disputeLostXml(id);
@@ -52,7 +54,12 @@ public class WebhookTestingGateway {
             case PARTNER_MERCHANT_CONNECTED: return partnerMerchantConnectedXml(id);
             case PARTNER_MERCHANT_DISCONNECTED: return partnerMerchantDisconnectedXml(id);
             case PARTNER_MERCHANT_DECLINED: return partnerMerchantDeclinedXml(id);
+            case CONNECTED_MERCHANT_STATUS_TRANSITIONED: return connectedMerchantStatusTransitionedXml(id);
+            case CONNECTED_MERCHANT_PAYPAL_STATUS_CHANGED: return connectedMerchantPayPalStatusChangedXml(id);
             case SUBSCRIPTION_CHARGED_SUCCESSFULLY: return subscriptionChargedSuccessfullyXml(id);
+            case ACCOUNT_UPDATER_DAILY_REPORT: return accountUpdaterDailyReportXml(id);
+            case IDEAL_PAYMENT_COMPLETE: return idealPaymentCompleteXml(id);
+            case IDEAL_PAYMENT_FAILED: return idealPaymentFailedXml(id);
             default: return subscriptionXml(id);
         }
     }
@@ -137,6 +144,56 @@ public class WebhookTestingGateway {
                 node("disbursement-details",
                     node("disbursement-date", TYPE_DATE, "2013-07-09")
                 ),
+                node("billing"),
+                node("credit-card"),
+                node("customer"),
+                node("descriptor"),
+                node("shipping"),
+                node("subscription")
+        );
+    }
+
+    private String transactionSettledXml(String id) {
+        return node("transaction",
+                node("id", id),
+                node("status", "settled"),
+                node("amount", "100"),
+                node("us-bank-account",
+                    node("routing-number", "123456789"),
+                    node("last-4", "1234"),
+                    node("account-type", "checking"),
+                    node("account-holder-name", "Dan Schulman"),
+                    node("ach-mandate",
+                        node("text", "Sample ACH Mandate Text"),
+                        node("accepted-at", "2017-01-17")
+                    )
+                ),
+                node("disbursement-details"),
+                node("billing"),
+                node("credit-card"),
+                node("customer"),
+                node("descriptor"),
+                node("shipping"),
+                node("subscription")
+        );
+    }
+
+    private String transactionSettlementDeclinedXml(String id) {
+        return node("transaction",
+                node("id", id),
+                node("status", "settlement_declined"),
+                node("amount", "100"),
+                node("us-bank-account",
+                    node("routing-number", "123456789"),
+                    node("last-4", "1234"),
+                    node("account-type", "checking"),
+                    node("account-holder-name", "Dan Schulman"),
+                    node("ach-mandate",
+                        node("text", "Sample ACH Mandate Text"),
+                        node("accepted-at", "2017-01-17")
+                    )
+                ),
+                node("disbursement-details"),
                 node("billing"),
                 node("credit-card"),
                 node("customer"),
@@ -264,6 +321,57 @@ public class WebhookTestingGateway {
     private String partnerMerchantDeclinedXml(String id) {
         return node("partner-merchant",
                 node("partner-merchant-id", "abc123")
+        );
+    }
+
+    private String connectedMerchantStatusTransitionedXml(String id) {
+        return node("connected-merchant-status-transitioned",
+                node("oauth-application-client-id", "oauth_application_client_id"),
+                node("merchant-public-id", id),
+                node("status", "new_status")
+        );
+    }
+
+    private String connectedMerchantPayPalStatusChangedXml(String id) {
+        return node("connected-merchant-paypal-status-changed",
+                node("oauth-application-client-id", "oauth_application_client_id"),
+                node("merchant-public-id", id),
+                node("action", "link")
+        );
+    }
+
+    private String accountUpdaterDailyReportXml(String id) {
+        return node("account-updater-daily-report",
+                node("report-url", "link-to-csv-report"),
+                node("report-date", TYPE_DATE, "2016-01-14")
+        );
+    }
+
+    private String idealPaymentCompleteXml(String id) {
+        return node("ideal-payment",
+                node("id", id),
+                node("status", "COMPLETE"),
+                node("issuer", "ABCISSUER"),
+                node("order-id", "ORDERABC"),
+                node("currency", "EUR"),
+                node("amount", "10.00"),
+                node("created-at", "2016-11-29T23:27:34.547Z"),
+                node("approval-url", "https://example.com"),
+                node("ideal-transaction-id", "1234567890")
+        );
+    }
+
+    private String idealPaymentFailedXml(String id) {
+        return node("ideal-payment",
+                node("id", id),
+                node("status", "FAILED"),
+                node("issuer", "ABCISSUER"),
+                node("order-id", "ORDERABC"),
+                node("currency", "EUR"),
+                node("amount", "10.00"),
+                node("created-at", "2016-11-29T23:27:34.547Z"),
+                node("approval-url", "https://example.com"),
+                node("ideal-transaction-id", "1234567890")
         );
     }
 
