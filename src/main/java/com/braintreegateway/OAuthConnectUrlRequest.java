@@ -42,7 +42,7 @@ public class OAuthConnectUrlRequest extends Request {
         return this;
     }
 
-    public OAuthConnectUrlRequest loginOnly(String loginOnly) {
+    public OAuthConnectUrlRequest loginOnly(Boolean loginOnly) {
         this.loginOnly = loginOnly;
         return this;
     }
