@@ -18,21 +18,23 @@ public class WebhookNotificationGateway {
         this.configuration = configuration;
     }
 
-    public WebhookNotification parse(String signature, String payload, boolean skipValidation) {
+    public WebhookNotification parse(String signature, String payload) {        
+        validateSignature(signature, payload);
+        return _parse(payload);
+    }
+    
+    public WebhookNotification _parse(String payload) {
         Pattern p = Pattern.compile("[^A-Za-z0-9+=/\n]");
         Matcher m = p.matcher(payload);
         if (m.find()) {
           throw new InvalidSignatureException("payload contains illegal characters");
         }
-        if(!skipValidation) {
-            validateSignature(signature, payload);
-        }
         String xmlPayload = new String(Base64.decodeBase64(payload));
         NodeWrapper node = NodeWrapperFactory.instance.create(xmlPayload);
         return new WebhookNotification(node);
     }
-
-    private void validateSignature(String signature, String payload) {
+    
+    public void validateSignature(String signature, String payload) {
         String matchingSignature = null;
 
         String[] signaturePairs = signature.split("&");
