@@ -169,8 +169,12 @@ public class Transaction {
     private List<StatusEvent> statusHistory;
     private String subscriptionId;
     private Subscription subscription;
+    private SubscriptionDetails subscriptionDetails;
     private BigDecimal taxAmount;
     private Boolean taxExempt;
+    private BigDecimal shippingAmount;
+    private BigDecimal discountAmount;
+    private String shipsFromPostalCode;
     private Type type;
     private Calendar updatedAt;
     private BigDecimal serviceFeeAmount;
@@ -278,10 +282,14 @@ public class Transaction {
         settlementBatchId = node.findString("settlement-batch-id");
         shippingAddress = new Address(node.findFirst("shipping"));
         status = EnumUtils.findByName(Status.class, node.findString("status"), Status.UNRECOGNIZED);
+        subscriptionDetails = new SubscriptionDetails(node.findFirst("subscription"));
         subscription = new Subscription(node.findFirst("subscription"));
         subscriptionId = node.findString("subscription-id");
         taxAmount = node.findBigDecimal("tax-amount");
         taxExempt = node.findBoolean("tax-exempt");
+        shippingAmount = node.findBigDecimal("shipping-amount");
+        discountAmount = node.findBigDecimal("discount-amount");
+        shipsFromPostalCode = node.findString("ships-from-postal-code");
         type = EnumUtils.findByName(Type.class, node.findString("type"), Type.UNRECOGNIZED);
         updatedAt = node.findDateTime("updated-at");
 
@@ -504,7 +512,8 @@ public class Transaction {
     }
 
     /**
-     * Please use Transaction.getRefundIds() instead
+     * @deprecated see #getRefundIds()
+     * @return the refund id
      */
     @Deprecated
     public String getRefundId() {
@@ -547,12 +556,33 @@ public class Transaction {
         return subscriptionId;
     }
 
+    public SubscriptionDetails getSubscriptionDetails() {
+        return subscriptionDetails;
+    }
+
+    /**
+     * @deprecated see #getSubscriptionDetails()
+     * @return the subscription
+     */
+    @Deprecated
     public Subscription getSubscription() {
         return subscription;
     }
 
     public BigDecimal getTaxAmount() {
         return taxAmount;
+    }
+
+    public BigDecimal getShippingAmount() {
+        return shippingAmount;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public String getShipsFromPostalCode() {
+        return shipsFromPostalCode;
     }
 
     public Type getType() {
@@ -622,4 +652,9 @@ public class Transaction {
     public FacilitatorDetails getFacilitatorDetails() {
         return facilitatorDetails;
     }
+
+    public List<TransactionLineItem> getLineItems(BraintreeGateway gateway) {
+        return gateway.transactionLineItem().findAll(id);
+    }
+
 }

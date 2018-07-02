@@ -21,14 +21,13 @@ import java.util.TimeZone;
  * </pre>
  *
  * For more detailed information on {@link CreditCard CreditCards}, see <a
- * href="http://www.braintreepayments.com/gateway/credit-card-api"
+ * href="https://developers.braintreepayments.com/reference/response/credit-card/java"
  * target
- * ="_blank">http://www.braintreepayments.com/gateway/credit-card-api
- * </a><br />
+ * ="_blank">https://developers.braintreepayments.com/reference/response/credit-card/java
+ * </a><br>
  * For more detailed information on credit card verifications, see <a href=
- * "http://www.braintreepayments.com/gateway/credit-card-verification-api"
- * target="_blank">http://www.braintreepayments.com/gateway/credit-card-
- * verification-api</a>
+ * "https://developers.braintreepayments.com/reference/response/credit-card-verification/java"
+ * target="_blank">https://developers.braintreepayments.com/reference/response/credit-card-verification/java</a>
  */
 public class CreditCardGateway {
     private Configuration configuration;
@@ -41,6 +40,11 @@ public class CreditCardGateway {
 
     /**
      * Please use gateway.transparentRedirect().confirmCreditCard() instead
+     *
+     * @deprecated see TransparentRedirectGateway#confirmCreditCard(String)
+     * @param queryString
+     *            the query string
+     * @return the credit card
      */
     @Deprecated
     public Result<CreditCard> confirmTransparentRedirect(String queryString) {
@@ -108,33 +112,20 @@ public class CreditCardGateway {
     }
 
     /**
-     * Returns a PaymentMethodNonce which can be used by another merchant
-     *
-     * @param token
-     *            the token representing the CreditCard to forward
-     * @param receiving_merchant_id
-     *            the public ID of the merchant to forward to
-     * @return a {@link Result} containing a PaymentMethodNonce or raises a
-     *         {@link com.braintreegateway.exceptions.NotFoundException}.
+     * Please use the Grant API instead.
+     * @deprecated use the Grant API instead
+     * @param forwardRequest the request
+     * @return the payment method nonce
      */
-    public Result<PaymentMethodNonce> forward(PaymentMethodForwardRequest forwardRequest) {
-        String receivingMerchantId = forwardRequest.getReceivingMerchantId();
-        String token = forwardRequest.getToken();
-        if (token == null || token.trim().equals(""))
-            throw new NotFoundException("Token is required");
-        if(receivingMerchantId == null || receivingMerchantId.trim().equals(""))
-            throw new NotFoundException("Receiving merchant ID is required");
-
-        try {
-          NodeWrapper node = http.post(configuration.getMerchantPath() + "/payment_methods/forward", forwardRequest);
-          return new Result<PaymentMethodNonce>(node, PaymentMethodNonce.class);
-        } catch (NotFoundException e) {
-          throw new NotFoundException("Receiving merchant or payment method not found");
-        }
+    @Deprecated
+    public Result<PaymentMethodNonce> forward(PaymentMethodForwardRequest forwardRequest) throws NotFoundException {
+        throw new NotFoundException("This method of forwarding payment methods is no longer supported. Please consider the Grant API for similar functionality.");
     }
 
     /**
      * Please use gateway.transparentRedirect().url() instead
+     * @deprecated see TransparentRedirectGateway#url()
+     * @return the redirect URL for create
      */
     @Deprecated
     public String transparentRedirectURLForCreate() {
@@ -143,6 +134,8 @@ public class CreditCardGateway {
 
     /**
      * Please use gateway.transparentRedirect().url() instead
+     * @deprecated see TransparentRedirectGateway#url()
+     * @return the redirect URL for update
      */
     @Deprecated
     public String transparentRedirectURLForUpdate() {
@@ -190,6 +183,8 @@ public class CreditCardGateway {
      * Returns a {@link ResourceCollection} of all credit cards expiring between
      * the given calendars.
      *
+     * @param start the start date
+     * @param end the end date
      * @return a {@link ResourceCollection}.
      */
     public ResourceCollection<CreditCard> expiringBetween(Calendar start, Calendar end) {

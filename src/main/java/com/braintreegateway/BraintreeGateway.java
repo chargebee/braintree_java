@@ -86,6 +86,7 @@ public class BraintreeGateway {
      *            the public key provided by Braintree.
      * @param privateKey
      *            the private key provided by Braintree.
+     * @return a BraintreeGateway specifically for Partner usage
      */
     public static BraintreeGateway forPartner(Environment environment, String partnerId, String publicKey, String privateKey) {
         return new BraintreeGateway(environment, partnerId, publicKey, privateKey);
@@ -127,6 +128,10 @@ public class BraintreeGateway {
 
     public CreditCardVerificationGateway creditCardVerification() {
         return new CreditCardVerificationGateway(http, configuration);
+    }
+
+    public UsBankAccountVerificationGateway usBankAccountVerification() {
+        return new UsBankAccountVerificationGateway(http, configuration);
     }
 
     /**
@@ -218,6 +223,16 @@ public class BraintreeGateway {
      */
     public TransactionGateway transaction() {
         return new TransactionGateway(http, configuration);
+    }
+
+    /**
+     * Returns an {@link TransactionLineItemGateway} for interacting with
+     * {@link TransactionLineItem} objects.
+     *
+     * @return an {@link TransactionLineItemGateway}.
+     */
+    public TransactionLineItemGateway transactionLineItem() {
+        return new TransactionLineItemGateway(http, configuration);
     }
 
     public TransparentRedirectGateway transparentRedirect() {

@@ -73,6 +73,72 @@ public class PaymentMethodIT extends IntegrationTest {
         PayPalAccount paypalAccount = (PayPalAccount) paymentMethod;
         assertNotNull(paypalAccount.getEmail());
         assertNotNull(paypalAccount.getImageUrl());
+        assertNotNull(paypalAccount.getPayerId());
+        assertNotNull(paypalAccount.getCustomerId());
+        assertNotNull(paypalAccount.getSubscriptions());
+    }
+
+    @Test
+    public void createPayPalAccountFromNonceWithShipping() {
+        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
+        assertTrue(customerResult.isSuccess());
+        Customer customer = customerResult.getTarget();
+
+        String nonce = TestHelper.generateFuturePaymentPayPalNonce(gateway);
+        PaymentMethodRequest request = new PaymentMethodRequest().
+            customerId(customer.getId()).
+            paymentMethodNonce(nonce).
+            options().
+                paypal().
+                    shipping().
+                        firstName("Andrew").
+                        lastName("Mason").
+                        company("Braintree Shipping").
+                        streetAddress("456 W Main St").
+                        extendedAddress("Apt 2F").
+                        locality("Bartlett").
+                        region("MA").
+                        postalCode("60103").
+                        countryName("Mexico").
+                        countryCodeAlpha2("MX").
+                        countryCodeAlpha3("MEX").
+                        countryCodeNumeric("484").
+                    done().
+                done().
+            done();
+        Result<? extends PaymentMethod> result = gateway.paymentMethod().create(request);
+
+        assertTrue(result.isSuccess());
+        PaymentMethod paymentMethod = result.getTarget();
+        assertNotNull(paymentMethod.getToken());
+
+        PayPalAccount paypalAccount = (PayPalAccount) paymentMethod;
+        assertNotNull(paypalAccount.getCustomerId());
+    }
+
+
+    @Test
+    public void createPayPalAccountWithPayPalRefreshToken() {
+        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
+        assertTrue(customerResult.isSuccess());
+        Customer customer = customerResult.getTarget();
+
+        String nonce = TestHelper.generateFuturePaymentPayPalNonce(gateway);
+        PaymentMethodRequest request = new PaymentMethodRequest().
+            customerId(customer.getId()).
+            paypalRefreshToken("PAYPAL_REFRESH_TOKEN");
+
+        Result<? extends PaymentMethod> result = gateway.paymentMethod().create(request);
+
+        assertTrue(result.isSuccess());
+        PaymentMethod paymentMethod = result.getTarget();
+        assertNotNull(paymentMethod.getToken());
+        assertNotNull(paymentMethod.getImageUrl());
+
+        PayPalAccount paypalAccount = (PayPalAccount) paymentMethod;
+        assertNotNull(paypalAccount.getEmail());
+        assertNotNull(paypalAccount.getImageUrl());
+        assertNotNull(paypalAccount.getPayerId());
         assertNotNull(paypalAccount.getCustomerId());
         assertNotNull(paypalAccount.getSubscriptions());
     }
@@ -292,56 +358,6 @@ public class PaymentMethodIT extends IntegrationTest {
     }
 
     @Test
-    public void createUsBankAccountFromNonce() {
-        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
-        assertTrue(customerResult.isSuccess());
-        Customer customer = customerResult.getTarget();
-
-        String nonce = TestHelper.generateValidUsBankAccountNonce(gateway);
-        PaymentMethodRequest request = new PaymentMethodRequest()
-            .customerId(customer.getId())
-            .paymentMethodNonce(nonce)
-            .options()
-            .done();
-
-        Result<? extends PaymentMethod> result = gateway.paymentMethod().create(request);
-
-        assertTrue(result.isSuccess());
-
-        PaymentMethod paymentMethod = result.getTarget();
-        assertNotNull(paymentMethod.getToken());
-
-        UsBankAccount usBankAccount = (UsBankAccount) paymentMethod;
-        assertEquals("021000021", usBankAccount.getRoutingNumber());
-        assertEquals("1234", usBankAccount.getLast4());
-        assertEquals("checking", usBankAccount.getAccountType());
-        assertEquals("Dan Schulman", usBankAccount.getAccountHolderName());
-        assertTrue(Pattern.compile(".*CHASE.*").matcher(usBankAccount.getBankName()).matches());
-    }
-
-    @Test
-    public void doesNotCreateUsBankAccountFromInvalidNonce() {
-        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
-        assertTrue(customerResult.isSuccess());
-        Customer customer = customerResult.getTarget();
-
-        String nonce = TestHelper.generateInvalidUsBankAccountNonce();
-        PaymentMethodRequest request = new PaymentMethodRequest()
-            .customerId(customer.getId())
-            .paymentMethodNonce(nonce)
-            .options()
-            .done();
-
-        Result<? extends PaymentMethod> result = gateway.paymentMethod().create(request);
-
-        assertFalse(result.isSuccess());
-        assertEquals(
-                ValidationErrorCode.PAYMENT_METHOD_PAYMENT_METHOD_NONCE_UNKNOWN,
-                result.getErrors().forObject("payment_method").onField("payment_method_nonce").get(0).getCode()
-        );
-    }
-
-    @Test
     public void createAbstractPaymentMethod() {
         Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
         assertTrue(customerResult.isSuccess());
@@ -429,25 +445,6 @@ public class PaymentMethodIT extends IntegrationTest {
                 ValidationErrorCode.PAYPAL_ACCOUNT_CANNOT_VAULT_ONE_TIME_USE_PAYPAL_ACCOUNT,
                 result.getErrors().forObject("paypalAccount").onField("base").get(0).getCode()
                 );
-    }
-
-    @Test
-    public void createEuropeBankAccountWithNonce() {
-        Result<Customer> customerResult = gateway.customer().create(new CustomerRequest());
-        assertTrue(customerResult.isSuccess());
-        Customer customer = customerResult.getTarget();
-
-        String nonce = TestHelper.generateEuropeBankAccountNonce(gateway, customer);
-        PaymentMethodRequest request = new PaymentMethodRequest().
-                customerId(customer.getId()).
-                paymentMethodNonce(nonce);
-
-        Result<? extends PaymentMethod> result = gateway.paymentMethod().create(request);
-        assertTrue(result.isSuccess());
-        PaymentMethod paymentMethod = result.getTarget();
-        assertNotNull(paymentMethod.getImageUrl());
-        assertNotNull(paymentMethod.getCustomerId());
-        assertNotNull(paymentMethod.getSubscriptions());
     }
 
     @Test
@@ -691,6 +688,7 @@ public class PaymentMethodIT extends IntegrationTest {
                 .customerId(customer.getId());
 
             Result<? extends PaymentMethod> paymentMethodResult = gateway.paymentMethod().create(request);
+
             assertTrue(paymentMethodResult.isSuccess());
 
             Plan plan = PlanFixture.PLAN_WITHOUT_TRIAL;

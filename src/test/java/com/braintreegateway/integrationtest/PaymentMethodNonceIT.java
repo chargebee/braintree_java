@@ -1,6 +1,12 @@
 package com.braintreegateway.integrationtest;
 
 import com.braintreegateway.*;
+import com.braintreegateway.CreditCard.Commercial;
+import com.braintreegateway.CreditCard.DurbinRegulated;
+import com.braintreegateway.CreditCard.Debit;
+import com.braintreegateway.CreditCard.Healthcare;
+import com.braintreegateway.CreditCard.Payroll;
+import com.braintreegateway.CreditCard.Prepaid;
 import com.braintreegateway.testhelpers.TestHelper;
 import com.braintreegateway.exceptions.NotFoundException;
 import org.junit.Test;
@@ -53,7 +59,98 @@ public class PaymentMethodNonceIT extends IntegrationTest {
     }
 
     @Test
-    public void findReturnsPaymentMethodNonce() {
+    public void findCreditCardNonceReturnsValidBinDataPrepaidValue() {
+        String nonceString = "fake-valid-prepaid-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(Prepaid.YES, nonce.getBinData().getPrepaid());
+    }
+
+    @Test
+    public void findCreditCardNonceReturnsValidBinDataCommercialValue() {
+        String nonceString = "fake-valid-commercial-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(Commercial.YES, nonce.getBinData().getCommercial());
+    }
+
+    @Test
+    public void findCreditCardNonceReturnsValidBinDataDurbinRegulatedValue() {
+        String nonceString = "fake-valid-durbin-regulated-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(DurbinRegulated.YES, nonce.getBinData().getDurbinRegulated());
+    }
+
+    @Test
+    public void findCreditCardNonceReturnsValidBinDataHealthcareValue() {
+        String nonceString = "fake-valid-healthcare-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(Healthcare.YES, nonce.getBinData().getHealthcare());
+        assertEquals("J3", nonce.getBinData().getProductId());
+    }
+
+    @Test
+    public void findCreditCardNonceReturnsValidBinDataDebitValue() {
+        String nonceString = "fake-valid-debit-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(Debit.YES, nonce.getBinData().getDebit());
+    }
+
+    @Test
+    public void findCreditCardNonceReturnsValidBinDataPayrollValue() {
+        String nonceString = "fake-valid-payroll-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(Payroll.YES, nonce.getBinData().getPayroll());
+        assertEquals("MSA", nonce.getBinData().getProductId());
+    }
+
+    @Test
+    public void findCreditCardNonceReturnsValidBinDataCountryOfIssuanceValue() {
+        String nonceString = "fake-valid-country-of-issuance-cad-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals("CAN", nonce.getBinData().getCountryOfIssuance());
+    }
+
+    @Test
+    public void findCreditCardNonceReturnsValidBinDataIssuingBankValue() {
+        String nonceString = "fake-valid-issuing-bank-network-only-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals("NETWORK ONLY", nonce.getBinData().getIssuingBank());
+    }
+
+    @Test
+    public void findCreditCardNonceReturnsValidBinDataUnknownValues() {
+        String nonceString = "fake-valid-unknown-indicators-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(Commercial.UNKNOWN, nonce.getBinData().getCommercial());
+        assertEquals(DurbinRegulated.UNKNOWN, nonce.getBinData().getDurbinRegulated());
+        assertEquals(Debit.UNKNOWN, nonce.getBinData().getDebit());
+        assertEquals(Healthcare.UNKNOWN, nonce.getBinData().getHealthcare());
+        assertEquals(Payroll.UNKNOWN, nonce.getBinData().getPayroll());
+        assertEquals(Prepaid.UNKNOWN, nonce.getBinData().getPrepaid());
+        assertEquals("Unknown", nonce.getBinData().getProductId());
+        assertEquals("Unknown", nonce.getBinData().getCountryOfIssuance());
+        assertEquals("Unknown", nonce.getBinData().getIssuingBank());
+    }
+
+    @Test
+    public void findReturnsPaymentMethodNonceWith3DSDetails() {
         CreditCardRequest creditCardRequest = new CreditCardRequest().
             number(SandboxValues.CreditCardNumber.VISA.number).
             expirationMonth("12").
@@ -65,6 +162,11 @@ public class PaymentMethodNonceIT extends IntegrationTest {
 
         assertEquals(nonce, foundNonce.getNonce());
         assertTrue(foundNonce.getThreeDSecureInfo().isLiabilityShifted());
+        assertTrue(foundNonce.getThreeDSecureInfo().isLiabilityShiftPossible());
+        assertNotNull(foundNonce.getThreeDSecureInfo().getStatus());
+        assertNotNull(foundNonce.getThreeDSecureInfo().getCAVV());
+        assertNotNull(foundNonce.getThreeDSecureInfo().getXID());
+        assertNotNull(foundNonce.getThreeDSecureInfo().getECIFlag());
     }
 
     @Test
@@ -77,6 +179,7 @@ public class PaymentMethodNonceIT extends IntegrationTest {
 
         assertNull(foundNonce.getThreeDSecureInfo());
     }
+
     @Test
     public void findRaisesIfNotFound() {
         try {

@@ -12,16 +12,16 @@ import java.util.*;
  * <pre>
  *  TransactionRequest request = new TransactionRequest().
  *      amount(null).
- *   Result<Transaction> result = gateway.transaction().sale(request);
+ *   Result&lt;Transaction&gt; result = gateway.transaction().sale(request);
  *   Assert.assertFalse(result.isSuccess());
  *   ValidationErrors errors = result.getErrors();
  *   Assert.assertEquals(ValidationErrorCode.TRANSACTION_AMOUNT_IS_REQUIRED, errors.forObject("transaction").onField("amount").get(0).getCode());
  * </pre>
  * 
  * For more detailed information on {@link ValidationErrors}, see <a
- * href="http://www.braintreepayments.com/gateway/validation-errors"
+ * href="https://developers.braintreepayments.com/reference/general/validation-errors/overview/java"
  * target
- * ="_blank">http://www.braintreepayments.com/gateway/validation-errors
+ * ="_blank">https://developers.braintreepayments.com/reference/general/validation-errors/overview/java
  * </a>
  */
 public class ValidationErrors {
