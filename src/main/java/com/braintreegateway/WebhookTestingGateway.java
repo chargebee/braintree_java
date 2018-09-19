@@ -16,11 +16,19 @@ public class WebhookTestingGateway {
         this.configuration = configuration;
     }
 
-    private String buildPayload(WebhookNotification.Kind kind, String id) {
+    private String buildPayload(WebhookNotification.Kind kind, String id, String sourceMerchantId) {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         String timestamp = dateFormat.format(new Date());
-        String payload = "<notification><timestamp type=\"datetime\">" + timestamp + "</timestamp><kind>" + kind + "</kind><subject>" + subjectXml(kind, id) + "</subject></notification>";
+
+        String payload = "<notification>";
+        payload += "<timestamp type=\"datetime\">" + timestamp + "</timestamp>";
+        payload += "<kind>" + kind + "</kind>";
+        if (sourceMerchantId != null) {
+            payload += "<source-merchant-id>" + sourceMerchantId + "</source-merchant-id>";
+        }
+        payload += "<subject>" + subjectXml(kind, id) + "</subject>";
+        payload += "</notification>";
 
         return Base64.encodeBase64String(payload.getBytes()).replace("\r", "");
     }
@@ -30,8 +38,12 @@ public class WebhookTestingGateway {
     }
 
     public HashMap<String, String> sampleNotification(WebhookNotification.Kind kind, String id) {
+        return sampleNotification(kind, id, null);
+    }
+
+    public HashMap<String, String> sampleNotification(WebhookNotification.Kind kind, String id, String sourceMerchantId) {
         HashMap<String, String> response = new HashMap<String, String>();
-        String payload = buildPayload(kind, id);
+        String payload = buildPayload(kind, id, sourceMerchantId);
         response.put("bt_payload", payload);
         response.put("bt_signature", publicKeySignaturePair(payload));
 
@@ -54,12 +66,15 @@ public class WebhookTestingGateway {
             case PARTNER_MERCHANT_CONNECTED: return partnerMerchantConnectedXml(id);
             case PARTNER_MERCHANT_DISCONNECTED: return partnerMerchantDisconnectedXml(id);
             case PARTNER_MERCHANT_DECLINED: return partnerMerchantDeclinedXml(id);
+            case OAUTH_ACCESS_REVOKED: return oauthAccessRevokedXml(id);
             case CONNECTED_MERCHANT_STATUS_TRANSITIONED: return connectedMerchantStatusTransitionedXml(id);
             case CONNECTED_MERCHANT_PAYPAL_STATUS_CHANGED: return connectedMerchantPayPalStatusChangedXml(id);
             case SUBSCRIPTION_CHARGED_SUCCESSFULLY: return subscriptionChargedSuccessfullyXml(id);
+            case SUBSCRIPTION_CHARGED_UNSUCCESSFULLY: return subscriptionChargedUnsuccessfullyXml(id);
             case ACCOUNT_UPDATER_DAILY_REPORT: return accountUpdaterDailyReportXml(id);
             case IDEAL_PAYMENT_COMPLETE: return idealPaymentCompleteXml(id);
             case IDEAL_PAYMENT_FAILED: return idealPaymentFailedXml(id);
+            case GRANTED_PAYMENT_INSTRUMENT_UPDATE: return grantedPaymentInstrumentUpdateXml();
             default: return subscriptionXml(id);
         }
     }
@@ -123,6 +138,28 @@ public class WebhookTestingGateway {
                     node("transaction",
                         node("id", "1"),
                         node("status", "submitted_for_settlement"),
+                        node("amount", "49.99"),
+                        node("billing"),
+                        node("credit-card"),
+                        node("customer"),
+                        node("descriptor"),
+                        node("shipping"),
+                        node("disbursement-details", TYPE_ARRAY),
+                        node("subscription")
+                    )
+                ),
+                node("discounts", TYPE_ARRAY)
+        );
+    }
+
+    private String subscriptionChargedUnsuccessfullyXml(String id) {
+        return node("subscription",
+                node("id", id),
+                node("add_ons", TYPE_ARRAY),
+                node("transactions",
+                    node("transaction",
+                        node("id", "1"),
+                        node("status", "failed"),
                         node("amount", "49.99"),
                         node("billing"),
                         node("credit-card"),
@@ -207,6 +244,8 @@ public class WebhookTestingGateway {
         return node("dispute",
                 node("id", id),
                 node("amount", "250.00"),
+                node("amount-dispuated", "250.00"),
+                node("amount-won", "245.00"),
                 node("received-date", TYPE_DATE, "2014-03-21"),
                 node("reply-by-date", TYPE_DATE, "2014-03-21"),
                 node("date-opened", TYPE_DATE, "2014-03-21"),
@@ -225,6 +264,8 @@ public class WebhookTestingGateway {
         return node("dispute",
                 node("id", id),
                 node("amount", "250.00"),
+                node("amount-dispuated", "250.00"),
+                node("amount-won", "245.00"),
                 node("received-date", TYPE_DATE, "2014-03-21"),
                 node("reply-by-date", TYPE_DATE, "2014-03-21"),
                 node("date-opened", TYPE_DATE, "2014-03-21"),
@@ -243,6 +284,8 @@ public class WebhookTestingGateway {
         return node("dispute",
                 node("id", id),
                 node("amount", "250.00"),
+                node("amount-dispuated", "250.00"),
+                node("amount-won", "245.00"),
                 node("received-date", TYPE_DATE, "2014-03-21"),
                 node("reply-by-date", TYPE_DATE, "2014-03-21"),
                 node("date-opened", TYPE_DATE, "2014-03-21"),
@@ -324,6 +367,13 @@ public class WebhookTestingGateway {
         );
     }
 
+    private String oauthAccessRevokedXml(String id) {
+        return node("oauth-application-revocation",
+                node("merchant-id", id),
+                node("oauth-application-client-id", "oauth_application_client_id")
+        );
+    }
+
     private String connectedMerchantStatusTransitionedXml(String id) {
         return node("connected-merchant-status-transitioned",
                 node("oauth-application-client-id", "oauth_application_client_id"),
@@ -373,6 +423,23 @@ public class WebhookTestingGateway {
                 node("approval-url", "https://example.com"),
                 node("ideal-transaction-id", "1234567890")
         );
+    }
+
+    private String grantedPaymentInstrumentUpdateXml() {
+        return node("granted-payment-instrument-update",
+                node("grant-owner-merchant-id", "vczo7jqrpwrsi2px"),
+                node("grant-recipient-merchant-id", "cf0i8wgarszuy6hc"),
+                node("payment-method-nonce",
+                    node("nonce", "ee257d98-de40-47e8-96b3-a6954ea7a9a4"),
+                    node("consumed", TYPE_BOOLEAN, "false"),
+                    node("locked", TYPE_BOOLEAN, "false")
+                    ),
+                node("token", "abc123z"),
+                node("updated-fields", TYPE_ARRAY,
+                    node("item", "expiration-month"),
+                    node("item", "expiration-year")
+                    )
+                );
     }
 
     private String checkXml() {

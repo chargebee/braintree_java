@@ -1,5 +1,7 @@
 package com.braintreegateway.integrationtest;
 
+import com.braintreegateway.testhelpers.MerchantAccountTestConstants;
+
 import com.braintreegateway.*;
 import com.braintreegateway.exceptions.ForgedQueryStringException;
 import com.braintreegateway.exceptions.NotFoundException;
@@ -425,7 +427,7 @@ public class CustomerIT extends IntegrationTest {
 
         Result<Customer> result = gateway.customer().create(request);
         assertTrue(result.isSuccess());
-        assertTrue(result.getTarget().getCreditCards().get(0).isVenmoSdk());
+        assertFalse(result.getTarget().getCreditCards().get(0).isVenmoSdk());
     }
 
     @Test
@@ -486,10 +488,44 @@ public class CustomerIT extends IntegrationTest {
     }
 
     @Test
+    public void createWithOneTimePayPalAccountNonceAndShipping() {
+        String nonce = TestHelper.generateOneTimePayPalNonce(gateway);
+        CustomerRequest request = new CustomerRequest().
+            paymentMethodNonce(nonce).
+            options().
+                paypal().
+                    shipping().
+                        firstName("Andrew").
+                        lastName("Mason").
+                        company("Braintree Shipping").
+                        streetAddress("456 W Main St").
+                        extendedAddress("Apt 2F").
+                        locality("Bartlett").
+                        region("MA").
+                        postalCode("60103").
+                        countryName("Mexico").
+                        countryCodeAlpha2("MX").
+                        countryCodeAlpha3("MEX").
+                        countryCodeNumeric("484").
+                        done().
+                    done().
+                done();
+
+        Result<Customer> result = gateway.customer().create(request);
+        assertFalse(result.isSuccess());
+        assertEquals(1, result.getErrors().getAllDeepValidationErrors().size());
+    }
+
+    @Test
     public void createWithUsBankAccountNonce() {
         String nonce = TestHelper.generateValidUsBankAccountNonce(gateway);
         CustomerRequest request = new CustomerRequest().
-            paymentMethodNonce(nonce);
+            paymentMethodNonce(nonce).
+            creditCard().
+                options().
+                    verificationMerchantAccountId(MerchantAccountTestConstants.US_BANK_MERCHANT_ACCOUNT).
+                    done().
+                done();
 
         Result<Customer> result = gateway.customer().create(request);
         assertTrue(result.isSuccess());
@@ -572,7 +608,12 @@ public class CustomerIT extends IntegrationTest {
     public void findUsBankAccountFromCustomer() {
         String nonce = TestHelper.generateValidUsBankAccountNonce(gateway);
         CustomerRequest request = new CustomerRequest().
-            paymentMethodNonce(nonce);
+            paymentMethodNonce(nonce).
+            creditCard().
+                options().
+                    verificationMerchantAccountId(MerchantAccountTestConstants.US_BANK_MERCHANT_ACCOUNT).
+                    done().
+                done();
 
         Result<Customer> result = gateway.customer().create(request);
         assertTrue(result.isSuccess());
@@ -588,6 +629,108 @@ public class CustomerIT extends IntegrationTest {
         assertEquals("checking", usBankAccount.getAccountType());
         assertEquals("Dan Schulman", usBankAccount.getAccountHolderName());
         assertTrue(Pattern.matches(".*CHASE.*", usBankAccount.getBankName()));
+    }
+
+    @Test
+    public void findCustomerWithAllFilterableAssociationsFilteredOut() {
+        CustomerRequest request = new CustomerRequest().
+            customField("store_me", "custom value").
+            creditCard().
+                cardholderName("Fred Jones").
+                number("5105105105105100").
+                cvv("123").
+                expirationDate("05/12").
+                billingAddress().
+                    firstName("Fred").
+                    lastName("Jones").
+                    streetAddress("1 E Main St").
+                    locality("Chicago").
+                    region("Illinois").
+                    postalCode("60622").
+                    countryName("United States of America").
+                    done().
+                done().
+            lastName("Jones");
+
+        Customer customer = gateway.customer().create(request).getTarget();
+        CreditCard card = customer.getCreditCards().get(0);
+
+        String id = "subscription-id-" + new Random().nextInt();
+        SubscriptionRequest subscriptionRequest = new SubscriptionRequest().
+            id(id).
+            planId("integration_trialless_plan").
+            paymentMethodToken(card.getToken()).
+            price(new BigDecimal("1.00"));
+        Subscription subscription = gateway.subscription().create(subscriptionRequest).getTarget();
+
+        Customer foundCustomer = gateway.customer().find(customer.getId(), "customernoassociations");
+        assertEquals(0, foundCustomer.getCreditCards().size());
+        assertEquals(0, foundCustomer.getPaymentMethods().size());
+        assertEquals(0, foundCustomer.getAddresses().size());
+        assertEquals(0, foundCustomer.getCustomFields().size());
+    }
+
+    @Test
+    public void findCustomerWithNestedFilterableAssociationsFilteredOut() {
+        CustomerRequest request = new CustomerRequest().
+            customField("store_me", "custom value").
+            creditCard().
+                cardholderName("Fred Jones").
+                number("5105105105105100").
+                cvv("123").
+                expirationDate("05/12").
+                billingAddress().
+                    firstName("Fred").
+                    lastName("Jones").
+                    streetAddress("1 E Main St").
+                    locality("Chicago").
+                    region("Illinois").
+                    postalCode("60622").
+                    countryName("United States of America").
+                    done().
+                done().
+            lastName("Jones");
+
+        Customer customer = gateway.customer().create(request).getTarget();
+        CreditCard card = customer.getCreditCards().get(0);
+
+        String id = "subscription-id-" + new Random().nextInt();
+        SubscriptionRequest subscriptionRequest = new SubscriptionRequest().
+            id(id).
+            planId("integration_trialless_plan").
+            paymentMethodToken(card.getToken()).
+            price(new BigDecimal("1.00"));
+        Subscription subscription = gateway.subscription().create(subscriptionRequest).getTarget();
+
+        Customer foundCustomer = gateway.customer().find(customer.getId(), "customertoplevelassociations");
+        assertEquals(1, foundCustomer.getCreditCards().size());
+        assertEquals(0, foundCustomer.getCreditCards().get(0).getSubscriptions().size());
+        assertEquals(1, foundCustomer.getPaymentMethods().size());
+        assertEquals(0, foundCustomer.getPaymentMethods().get(0).getSubscriptions().size());
+        assertEquals(1, foundCustomer.getAddresses().size());
+        assertEquals(1, foundCustomer.getCustomFields().size());
+    }
+
+    @Test
+    public void findWithEmptyAssociatedFilterId() {
+        CustomerRequest request = new CustomerRequest().
+            customField("store_me", "custom value").
+            firstName("Jonas").
+            lastName("Jones");
+
+        Customer customer = gateway.customer().create(request).getTarget();
+
+        try {
+            gateway.customer().find(customer.getId(), "");
+            fail("Should throw NotFoundException");
+        } catch (NotFoundException e) {
+        }
+
+        try {
+            gateway.customer().find(customer.getId(), null);
+            fail("Should throw NotFoundException");
+        } catch (NotFoundException e) {
+        }
     }
 
     @Test

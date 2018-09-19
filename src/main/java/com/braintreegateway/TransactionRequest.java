@@ -3,7 +3,9 @@ package com.braintreegateway;
 import com.braintreegateway.Transaction.Type;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,6 +31,7 @@ public class TransactionRequest extends Request {
     private String source;
     private String shippingAddressId;
     private String billingAddressId;
+    private TransactionApplePayCardRequest applePayCardRequest;
     private TransactionDescriptorRequest descriptorRequest;
     private TransactionIndustryRequest industryRequest;
     private TransactionAddressRequest shippingAddressRequest;
@@ -36,6 +39,9 @@ public class TransactionRequest extends Request {
     private TransactionThreeDSecurePassThruRequest threeDSecurePassThruRequest;
     private BigDecimal taxAmount;
     private Boolean taxExempt;
+    private BigDecimal shippingAmount;
+    private BigDecimal discountAmount;
+    private String shipsFromPostalCode;
     private Type type;
     private String venmoSdkPaymentMethodCode;
     private String paymentMethodNonce;
@@ -45,15 +51,19 @@ public class TransactionRequest extends Request {
     private Boolean threeDSecureTransaction;
 
     private String sharedPaymentMethodToken;
+    private String sharedPaymentMethodNonce;
     private String sharedCustomerId;
     private String sharedShippingAddressId;
     private String sharedBillingAddressId;
 
     private RiskDataTransactionRequest riskDataTransactionRequest;
 
+    private List<TransactionLineItemRequest> transactionLineItemRequests;
+
     public TransactionRequest() {
         this.customFields = new HashMap<String, String>();
         this.threeDSecureTransaction = false;
+        this.transactionLineItemRequests = new ArrayList<TransactionLineItemRequest>();
     }
 
     public TransactionRequest amount(BigDecimal amount) {
@@ -196,6 +206,21 @@ public class TransactionRequest extends Request {
         return this;
     }
 
+    public TransactionRequest shippingAmount(BigDecimal shippingAmount) {
+        this.shippingAmount = shippingAmount;
+        return this;
+    }
+
+    public TransactionRequest discountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
+        return this;
+    }
+
+    public TransactionRequest shipsFromPostalCode(String shipsFromPostalCode) {
+        this.shipsFromPostalCode = shipsFromPostalCode;
+        return this;
+    }
+
     public TransactionRequest venmoSdkPaymentMethodCode(String venmoSdkPaymentMethodCode) {
       this.venmoSdkPaymentMethodCode = venmoSdkPaymentMethodCode;
       return this;
@@ -217,6 +242,11 @@ public class TransactionRequest extends Request {
         return this;
     }
 
+    public TransactionRequest sharedPaymentMethodNonce(String sharedPaymentMethodNonce) {
+        this.sharedPaymentMethodNonce = sharedPaymentMethodNonce;
+        return this;
+    }
+
     public TransactionRequest sharedCustomerId(String sharedCustomerId) {
         this.sharedCustomerId = sharedCustomerId;
         return this;
@@ -235,6 +265,18 @@ public class TransactionRequest extends Request {
     public RiskDataTransactionRequest riskData() {
         riskDataTransactionRequest = new RiskDataTransactionRequest(this);
         return riskDataTransactionRequest;
+    }
+
+    public TransactionLineItemRequest lineItem() {
+        TransactionLineItemRequest transactionLineItemRequest = new TransactionLineItemRequest(this);
+        transactionLineItemRequests.add(transactionLineItemRequest);
+        return transactionLineItemRequest;
+    }
+
+    public TransactionApplePayCardRequest applePayCardRequest() {
+        TransactionApplePayCardRequest applePayCardRequest = new TransactionApplePayCardRequest(this);
+        this.applePayCardRequest = applePayCardRequest;
+        return applePayCardRequest;
     }
 
     @Override
@@ -270,9 +312,13 @@ public class TransactionRequest extends Request {
             addElement("purchaseOrderNumber", purchaseOrderNumber).
             addElement("taxAmount", taxAmount).
             addElement("taxExempt", taxExempt).
+            addElement("shippingAmount", shippingAmount).
+            addElement("discountAmount", discountAmount).
+            addElement("shipsFromPostalCode", shipsFromPostalCode).
             addElement("shippingAddressId", shippingAddressId).
             addElement("billingAddressId", billingAddressId).
             addElement("creditCard", creditCardRequest).
+            addElement("applePayCard", applePayCardRequest).
             addElement("paypalAccount", paypalRequest).
             addElement("customer", customerRequest).
             addElement("descriptor", descriptorRequest).
@@ -287,6 +333,7 @@ public class TransactionRequest extends Request {
             addElement("fraudMerchantId", fraudMerchantId).
             addElement("venmoSdkPaymentMethodCode", venmoSdkPaymentMethodCode).
             addElement("sharedPaymentMethodToken", sharedPaymentMethodToken).
+            addElement("sharedPaymentMethodNonce", sharedPaymentMethodNonce).
             addElement("sharedCustomerId", sharedCustomerId).
             addElement("sharedShippingAddressId", sharedShippingAddressId).
             addElement("sharedBillingAddressId", sharedBillingAddressId).
@@ -303,6 +350,10 @@ public class TransactionRequest extends Request {
         if (threeDSecureTransaction) {
             String token = threeDSecureToken != null ? threeDSecureToken : "";
             builder.addElement("threeDSecureToken", token);
+        }
+
+        if (!transactionLineItemRequests.isEmpty()) {
+            builder.addElement("lineItems", transactionLineItemRequests);
         }
 
         return builder;

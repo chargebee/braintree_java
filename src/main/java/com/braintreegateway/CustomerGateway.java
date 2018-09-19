@@ -17,7 +17,7 @@ import java.util.List;
  * gateway.customer().create(...)
  * </pre>
  *
- * For more detailed information on {@link Customer Customers}, see <a href="http://www.braintreepayments.com/gateway/customer-api" target="_blank">http://www.braintreepaymentsolutions.com/gateway/customer-api</a>
+ * For more detailed information on {@link Customer Customers}, see <a href="https://developers.braintreepayments.com/reference/response/customer/java" target="_blank">https://developers.braintreepayments.com/reference/response/customer/java</a>
  */
 public class CustomerGateway {
     private Configuration configuration;
@@ -52,6 +52,9 @@ public class CustomerGateway {
 
     /**
      * Please use gateway.transparentRedirect().confirmCustomer() instead
+     * @deprecated see TransparentRedirectGateway#confirmCustomer(String)
+     * @param queryString the query string
+     * @return a customer
      */
     @Deprecated
     public Result<Customer> confirmTransparentRedirect(String queryString) {
@@ -100,8 +103,30 @@ public class CustomerGateway {
     }
 
     /**
+     * Finds a {@link Customer} by id.
+     *
+     * @param id
+     *            the id of the {@link Customer}.
+     * @param associationFilterId
+     *            the id of the association filter to use.
+     * @return the {@link Customer} or raises a
+     *         {@link com.braintreegateway.exceptions.NotFoundException}.
+     */
+    public Customer find(String id, String associationFilterId) {
+        if(id == null || id.trim().equals(""))
+            throw new NotFoundException();
+
+        if(associationFilterId == null || associationFilterId.isEmpty())
+            throw new NotFoundException();
+
+        String queryParams = "?association_filter_id=" + associationFilterId;
+        return new Customer(http.get(configuration.getMerchantPath() + "/customers/" + id + queryParams));
+    }
+
+    /**
      * Finds all Transactions that match the query and returns a {@link ResourceCollection}.
-     * See: <a href="http://www.braintreepayments.com/gateway/transaction-api#searching" target="_blank">http://www.braintreepaymentsolutions.com/gateway/transaction-api#searching</a>
+     * See: <a href="https://developers.braintreepayments.com/reference/request/transaction/search/java" target="_blank">https://developers.braintreepayments.com/reference/request/transaction/search/java</a>
+     * @param query the request query to use for search
      * @return a {@link ResourceCollection}.
      */
     public ResourceCollection<Customer> search(CustomerSearchRequest query) {
@@ -111,6 +136,8 @@ public class CustomerGateway {
 
     /**
      * Please use gateway.transparentRedirect().url() instead
+     * @deprecated see TransparentRedirectGateway#url()
+     * @return the redirect URL for create
      */
     @Deprecated
     public String transparentRedirectURLForCreate() {
@@ -119,6 +146,8 @@ public class CustomerGateway {
 
     /**
      * Please use gateway.transparentRedirect().url() instead
+     * @deprecated see TransparentRedirectGateway#url()
+     * @return the redirect URL for update
      */
     @Deprecated
     public String transparentRedirectURLForUpdate() {

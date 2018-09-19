@@ -76,6 +76,21 @@ public class WebhookNotificationIT extends IntegrationTest {
     }
 
     @Test
+    public void createsSampleSubscriptionChargedUnsuccessfullyNotification() {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.SUBSCRIPTION_CHARGED_UNSUCCESSFULLY, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification().parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.SUBSCRIPTION_CHARGED_UNSUCCESSFULLY, notification.getKind());
+        assertEquals("my_id", notification.getSubscription().getId());
+        assertEquals(1, notification.getSubscription().getTransactions().size());
+
+        Transaction transaction = notification.getSubscription().getTransactions().get(0);
+        assertEquals(Transaction.Status.FAILED, transaction.getStatus());
+        assertEquals("49.99", transaction.getAmount().toString());
+    }
+
+    @Test
     public void createsSampleMerchantAccountApprovedNotification() {
         HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.SUB_MERCHANT_ACCOUNT_APPROVED, "my_id");
 
@@ -124,6 +139,7 @@ public class WebhookNotificationIT extends IntegrationTest {
         assertNotNull(notification.getDispute().getOpenedDate());
     }
 
+    @Test
     public void createsSampleDisputeWonNotification() {
         HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.DISPUTE_WON, "my_id");
 
@@ -136,6 +152,7 @@ public class WebhookNotificationIT extends IntegrationTest {
         assertNotNull(notification.getDispute().getOpenedDate());
     }
 
+    @Test
     public void createsSampleDisputeLostNotification() {
         HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.DISPUTE_LOST, "my_id");
 
@@ -146,7 +163,35 @@ public class WebhookNotificationIT extends IntegrationTest {
         assertEquals(Dispute.Status.LOST, notification.getDispute().getStatus());
         assertEquals(Dispute.Kind.CHARGEBACK, notification.getDispute().getKind());
         assertNotNull(notification.getDispute().getOpenedDate());
-        assertNotNull(notification.getDispute().getWonDate());
+        assertNull(notification.getDispute().getWonDate());
+    }
+
+    @Test
+    public void createsSampleNotificationWithSourceMerchantId() {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.SUBSCRIPTION_WENT_PAST_DUE, "my_id", "my_source_merchant_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification().parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals("my_source_merchant_id", notification.getSourceMerchantId());
+    }
+
+    @Test
+    public void createsSampleNotificationWithoutSourceMerchantIdIfUnspecified() {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.SUBSCRIPTION_WENT_PAST_DUE, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification().parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertNull(notification.getSourceMerchantId());
+    }
+
+    @Test(expected = InvalidSignatureException.class)
+    public void invalidSignatureRaisesExceptionWhenSignatureIsNull() {
+        this.gateway.webhookNotification().parse(null, "payload");
+    }
+
+    @Test(expected = InvalidSignatureException.class)
+    public void invalidSignatureRaisesExceptionWhenPayloadIsNull() {
+        this.gateway.webhookNotification().parse("signature", null);
     }
 
     @Test(expected = InvalidSignatureException.class)
@@ -349,6 +394,23 @@ public class WebhookNotificationIT extends IntegrationTest {
     }
 
     @Test
+    public void buildsSampleNotificationForOAuthAccessRevocation()
+    {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting()
+            .sampleNotification(WebhookNotification.Kind.OAUTH_ACCESS_REVOKED, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification()
+            .parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.OAUTH_ACCESS_REVOKED, notification.getKind());
+        assertEquals("my_id", notification.getOAuthAccessRevocation().getMerchantId());
+        assertEquals("oauth_application_client_id", notification.getOAuthAccessRevocation().getOauthApplicationClientId());
+        long now = new Date().getTime();
+        long age = now - notification.getTimestamp().getTime().getTime();
+        assertTrue(age < 5000);
+    }
+
+    @Test
     public void buildsSampleNotificationForPartnerMerchantDisconnectedWebhook()
     {
         HashMap<String, String> sampleNotification = this.gateway.webhookTesting()
@@ -378,6 +440,7 @@ public class WebhookNotificationIT extends IntegrationTest {
 
         assertEquals(WebhookNotification.Kind.CONNECTED_MERCHANT_STATUS_TRANSITIONED, notification.getKind());
         assertEquals("my_id", notification.getConnectedMerchantStatusTransitioned().getMerchantPublicId());
+        assertEquals("my_id", notification.getConnectedMerchantStatusTransitioned().getMerchantId());
         assertEquals("new_status", notification.getConnectedMerchantStatusTransitioned().getStatus());
         assertEquals("oauth_application_client_id", notification.getConnectedMerchantStatusTransitioned().getOAuthApplicationClientId());
     }
@@ -393,6 +456,7 @@ public class WebhookNotificationIT extends IntegrationTest {
 
         assertEquals(WebhookNotification.Kind.CONNECTED_MERCHANT_PAYPAL_STATUS_CHANGED, notification.getKind());
         assertEquals("my_id", notification.getConnectedMerchantPayPalStatusChanged().getMerchantPublicId());
+        assertEquals("my_id", notification.getConnectedMerchantPayPalStatusChanged().getMerchantId());
         assertEquals("link", notification.getConnectedMerchantPayPalStatusChanged().getAction());
         assertEquals("oauth_application_client_id", notification.getConnectedMerchantPayPalStatusChanged().getOAuthApplicationClientId());
     }
@@ -461,5 +525,24 @@ public class WebhookNotificationIT extends IntegrationTest {
         assertEquals(2016, notification.getAccountUpdaterDailyReport().getReportDate().get(Calendar.YEAR));
         assertEquals(Calendar.JANUARY, notification.getAccountUpdaterDailyReport().getReportDate().get(Calendar.MONTH));
         assertEquals(14, notification.getAccountUpdaterDailyReport().getReportDate().get(Calendar.DAY_OF_MONTH));
+    }
+
+    @Test
+    public void createsSampleNotificationForGrantedPaymentInstrumentUpdate() {
+        HashMap<String, String> sampleNotification = this.gateway.webhookTesting().sampleNotification(WebhookNotification.Kind.GRANTED_PAYMENT_INSTRUMENT_UPDATE, "my_id");
+
+        WebhookNotification notification = this.gateway.webhookNotification().parse(sampleNotification.get("bt_signature"), sampleNotification.get("bt_payload"));
+
+        assertEquals(WebhookNotification.Kind.GRANTED_PAYMENT_INSTRUMENT_UPDATE, notification.getKind());
+
+        GrantedPaymentInstrumentUpdate update = notification.getGrantedPaymentInstrumentUpdate();
+
+        assertEquals("vczo7jqrpwrsi2px", update.getGrantOwnerMerchantId());
+        assertEquals("cf0i8wgarszuy6hc", update.getGrantRecipientMerchantId());
+        assertEquals("ee257d98-de40-47e8-96b3-a6954ea7a9a4", update.getPaymentMethodNonce());
+        assertEquals("abc123z", update.getToken());
+        assertEquals("expiration-month", update.getUpdatedFields().get(0));
+        assertEquals("expiration-year", update.getUpdatedFields().get(1));
+        assertEquals(2, update.getUpdatedFields().size());
     }
 }

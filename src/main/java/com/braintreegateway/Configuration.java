@@ -1,16 +1,17 @@
 package com.braintreegateway;
 
-import com.braintreegateway.exceptions.ConfigurationException;
-import com.braintreegateway.util.ClientLibraryProperties;
-
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.braintreegateway.exceptions.ConfigurationException;
+import com.braintreegateway.util.ClientLibraryProperties;
+
 public class Configuration {
     private Environment environment;
     private int timeout;
+    private int connectTimeout;
     private Proxy proxy;
     private String accessToken;
     private String clientId;
@@ -26,6 +27,7 @@ public class Configuration {
     }
 
     public static final String VERSION = new ClientLibraryProperties().version();
+    public static final String GRAPHQL_API_VERSION = "2018-05-21";
 
     public static String apiVersion() {
         return "4";
@@ -111,6 +113,10 @@ public class Configuration {
         return environment.baseURL;
     }
 
+    public String getGraphQLURL() {
+        return environment.graphQLURL;
+    }
+
     public Boolean usesProxy() {
         return proxy != null;
     }
@@ -141,5 +147,13 @@ public class Configuration {
 
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
+    }
+
+    public int getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public void setConnectTimeout(Integer timeout) {
+        this.connectTimeout = timeout;
     }
 }

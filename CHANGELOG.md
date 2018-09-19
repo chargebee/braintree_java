@@ -1,3 +1,70 @@
+## 2.83.1
+* Restore Javadoc
+
+## 2.83.0
+* Add subscription charged unsuccessfully sample webhook to webhook testing gateway
+* Add initial support for GraphQL API's
+* Add Transaction-Level Fee Report API
+* Add support for Samsung Pay
+
+## 2.81.0
+* Allow payee ID to be passed in options params for transaction create
+* Add `processor_response_code` and `processor_response_text` to authorization adjustments subfield in transaction response.
+* Add `getMerchantId` to `ConnectedMerchantStatusTransitioned` and `ConnectedMerchantPayPalStatusChanged`, and `getOauthApplicationClientId` to OAuthAccessRevocation webhooks
+* Fix webhook testing sample xml for dispute webhooks to include `amount-won` and `amount-disputed`
+
+## 2.80.0
+* Add support for US Bank Account verifications API
+
+## 2.79.0
+* Update `jackson-jr` to v2.9.5 to fix an incompatibility with Java 9
+* Fix issue where multiple search criteria was not allowed. [#62](https://github.com/braintree/braintree_java/issues/62).
+* Add support for `SubscriptionDetails` and deprecate `Subscription` in `Transaction`
+
+## 2.78.0
+* Add support for `OAUTH_ACCESS_REVOKED` in `WebhookNotification`s
+* Add support for dispute search by `customerId`, `disbursementDate`, and `effectiveDate`
+* Add `payerId` accessor in `PayPalAccount`
+* Add support for VCR compelling evidence dispute representment
+
+## 2.77.0
+* Fix possible NullPointerException in UsBankAccount
+* Add support for `association_filter_id` in `Customer#find`
+
+## 2.76.0
+* Deprecated `TRANSACTION_LINE_ITEM_DISCOUNT_AMOUNT_MUST_BE_GREATER_THAN_ZERO` error in favor of `TRANSACTION_LINE_ITEM_DISCOUNT_AMOUNT_CANNOT_BE_NEGATIVE`
+* Deprecated `TRANSACTION_LINE_ITEM_UNIT_TAX_AMOUNT_MUST_BE_GREATER_THAN_ZERO` error in favor of `TRANSACTION_LINE_ITEM_UNIT_TAX_AMOUNT_CANNOT_BE_NEGATIVE`
+* Deprecated `TRANSACTION_LINE_ITEM_TAX_AMOUNT_MUST_BE_GREATER_THAN_ZERO` error in favor of `TRANSACTION_LINE_ITEM_TAX_AMOUNT_CANNOT_BE_NEGATIVE`
+
+## 2.75.0
+* Update https certificate bundle
+* Add `getSourceMerchantId()` to `WebhookNotification`s
+* Add support for taxAmount field on transaction lineItems
+* Swap out `org.json` package for `jackson-jr` to fix licensing issues (#58,#59)
+* Add support for `profile_id` in Transaction#create options for VenmoAccounts
+
+## 2.74.1
+* Add support for line_items
+* Add support for tagged evidence in DisputeGateway#addTextEvidence (Beta release)
+* Add support for raw Apple Pay processing
+* Add support for setting connect timeout (#56)
+
+## 2.74.0
+
+* Add support for upgrading a PayPal future payment refresh token to a billing agreement
+* Add loginOnly parameter to OAuth connect URL
+* Add support for Granted Payment Instrument Update webhook
+* Add ability to create a transaction from a shared nonce
+* Fix spec to expect PayPal transaction to settle immediately after successful capture
+* Add `options` -> `paypal` -> `shipping` for creating & updating customers as well as creating payment methods
+* Add `imageUrl` to `ApplePayDetails`
+* Deprecate `OAuthGateway::computeSignature`
+* Fix spec to expect PayPal transactions to move to settling rather than settled
+* Add `deviceDataCaptured` field to `RiskData`
+* Add `binData` to `PaymentMethodNonce`
+* Throw error if `signature` or `payload` in webhook is null
+* Fix `receivedDate`/`replyByDate` by returning `DateRangeNode` in `DisputeSearchRequest` (Note: this is a breaking change for limited relese disputes API)
+
 ## 2.73.0
 
 * Add iDEAL webhook support
@@ -418,7 +485,7 @@
 ## 2.4.0
 
 * Added unified message to result objects
-* Added ability to specify country using countryName, countryCodeAlpha2, countryCodeAlpha3, or countryCodeNumeric (see [ISO_3166-1](http://en.wikipedia.org/wiki/ISO_3166-1))
+* Added ability to specify country using countryName, countryCodeAlpha2, countryCodeAlpha3, or countryCodeNumeric (see [ISO_3166-1](https://en.wikipedia.org/wiki/ISO_3166-1))
 * Added gatewayRejectionReason to Transaction and Verification
 * When creating a Subscription, return failed transaction on the Result if the initial transaction is not successful
 

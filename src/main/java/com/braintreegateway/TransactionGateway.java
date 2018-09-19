@@ -22,7 +22,7 @@ import java.util.List;
  * gateway.transaction().create(...)
  * </pre>
  *
- * For more detailed information on {@link Transaction Transactions}, see <a href="http://www.braintreepayments.com/gateway/transaction-api" target="_blank">http://www.braintreepaymentsolutions.com/gateway/transaction-api</a>
+ * For more detailed information on {@link Transaction Transactions}, see <a href="https://developers.braintreepayments.com/reference/response/transaction/java" target="_blank">https://developers.braintreepayments.com/reference/response/transaction/java</a>
  */
 public class TransactionGateway {
 
@@ -41,6 +41,8 @@ public class TransactionGateway {
 
     /**
      * Please use gateway.transparentRedirect().confirmTransaction() instead
+     * @param queryString the query string
+     * @return the transaction
      */
     @Deprecated
     public Result<Transaction> confirmTransparentRedirect(String queryString) {
@@ -123,7 +125,8 @@ public class TransactionGateway {
 
     /**
      * Finds all Transactions that match the query and returns a {@link ResourceCollection}.
-     * See: <a href="http://www.braintreepayments.com/gateway/transaction-api#searching" target="_blank">http://www.braintreepaymentsolutions.com/gateway/transaction-api#searching</a>
+     * See: <a href="https://developers.braintreepayments.com/reference/request/transaction/search/java" target="_blank">https://developers.braintreepayments.com/reference/request/transaction/search/java</a>
+     * @param query the search query
      * @return a {@link ResourceCollection} or raises a {@link DownForMaintenanceException}.
      */
     public ResourceCollection<Transaction> search(TransactionSearchRequest query) {
@@ -229,6 +232,7 @@ public class TransactionGateway {
 
     /**
      * Please use gateway.transparentRedirect().url() instead
+     * @return redirect URL
      */
     @Deprecated
     public String transparentRedirectURLForCreate() {

@@ -24,6 +24,12 @@ public class WebhookNotificationGateway {
     }
     
     public WebhookNotification _parse(String payload) {
+        if (signature == null) {
+            throw new InvalidSignatureException("signature cannot be null");
+        }
+        if (payload == null) {
+            throw new InvalidSignatureException("payload cannot be null");
+        }
         Pattern p = Pattern.compile("[^A-Za-z0-9+=/\n]");
         Matcher m = p.matcher(payload);
         if (m.find()) {
