@@ -18,7 +18,12 @@ public class WebhookNotificationGateway {
         this.configuration = configuration;
     }
 
-    public WebhookNotification parse(String signature, String payload) {
+    public WebhookNotification parse(String signature, String payload) {        
+        validateSignature(signature, payload);
+        return _parse(signature, payload);
+    }
+
+    public WebhookNotification _parse(String signature, String payload) {
         if (signature == null) {
             throw new InvalidSignatureException("signature cannot be null");
         }
@@ -30,13 +35,12 @@ public class WebhookNotificationGateway {
         if (m.find()) {
           throw new InvalidSignatureException("payload contains illegal characters");
         }
-        validateSignature(signature, payload);
         String xmlPayload = new String(Base64.decodeBase64(payload));
         NodeWrapper node = NodeWrapperFactory.instance.create(xmlPayload);
         return new WebhookNotification(node);
     }
-
-    private void validateSignature(String signature, String payload) {
+    
+    public void validateSignature(String signature, String payload) {
         String matchingSignature = null;
 
         String[] signaturePairs = signature.split("&");
