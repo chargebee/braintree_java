@@ -10,7 +10,8 @@ public class SandboxValues {
         VISA("4111111111111111"),
         MASTER_CARD("5555555555554444"),
         FRAUD("4000111111111511"),
-        AMEX("378282246310005");
+        AMEX("378282246310005"),
+        ELO("5066991111111118");
         public String number;
 
         private CreditCardNumber(String number) {
@@ -54,7 +55,7 @@ public class SandboxValues {
     }
 
     public enum TransactionAmount {
-        AUTHORIZE("1000.00"), DECLINE("2000.00"), FAILED("3000.00");
+        AUTHORIZE("1000.00"), DECLINE("2000.00"), HARD_DECLINE("2015.00"), FAILED("3000.00");
 
         public BigDecimal amount;
 

@@ -35,6 +35,8 @@ public class WebhookNotification {
         IDEAL_PAYMENT_COMPLETE("ideal_payment_complete"),
         IDEAL_PAYMENT_FAILED("ideal_payment_failed"),
         GRANTED_PAYMENT_INSTRUMENT_UPDATE("granted_payment_instrument_update"),
+        GRANTED_PAYMENT_METHOD_REVOKED("granted_payment_method_revoked"),
+        LOCAL_PAYMENT_COMPLETED("local_payment_completed"),
         UNRECOGNIZED("unrecognized");
 
         private final String name;
@@ -64,6 +66,8 @@ public class WebhookNotification {
     private ConnectedMerchantPayPalStatusChanged connectedMerchantPayPalStatusChanged;
     private IdealPayment idealPayment;
     private GrantedPaymentInstrumentUpdate grantedPaymentInstrumentUpdate;
+    private RevokedPaymentMethodMetadata revokedPaymentMethodMetadata;
+    private LocalPaymentCompleted localPaymentCompleted;
     private String sourceMerchantId;
 
     public WebhookNotification(NodeWrapper node) {
@@ -124,6 +128,14 @@ public class WebhookNotification {
 
         if (wrapperNode.findFirst("granted-payment-instrument-update") != null) {
             this.grantedPaymentInstrumentUpdate = new GrantedPaymentInstrumentUpdate(wrapperNode.findFirst("granted-payment-instrument-update"));
+        }
+
+        if (kind == WebhookNotification.Kind.GRANTED_PAYMENT_METHOD_REVOKED) {
+            this.revokedPaymentMethodMetadata = new RevokedPaymentMethodMetadata(wrapperNode);
+        }
+
+        if (wrapperNode.findFirst("local-payment") != null) {
+            this.localPaymentCompleted = new LocalPaymentCompleted(wrapperNode.findFirst("local-payment"));
         }
 
         if (!wrapperNode.isSuccess()) {
@@ -193,5 +205,13 @@ public class WebhookNotification {
 
     public GrantedPaymentInstrumentUpdate getGrantedPaymentInstrumentUpdate() {
         return this.grantedPaymentInstrumentUpdate;
+    }
+
+    public RevokedPaymentMethodMetadata getRevokedPaymentMethodMetadata() {
+        return this.revokedPaymentMethodMetadata;
+    }
+
+    public LocalPaymentCompleted getLocalPaymentCompleted() {
+        return this.localPaymentCompleted;
     }
 }

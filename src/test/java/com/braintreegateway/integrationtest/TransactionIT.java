@@ -29,6 +29,8 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
     public static final String DISPUTED_TRANSACTION_ID = "disputedtransaction";
     public static final String TWO_DISPUTE_TRANSACTION_ID = "2disputetransaction";
     public static final String AUTH_ADJUSTMENT_TRANSACTION_ID = "authadjustmenttransaction";
+    public static final String AUTH_ADJUSTMENT_SOFT_DECLINED_TRANSACTION_ID = "authadjustmenttransactionsoftdeclined";
+    public static final String AUTH_ADJUSTMENT_HARD_DECLINED_TRANSACTION_ID = "authadjustmenttransactionharddeclined";
 
     @SuppressWarnings("deprecation")
     @Test
@@ -200,6 +202,10 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         assertNotNull(transaction.getProcessorAuthorizationCode());
         assertEquals(Transaction.Type.SALE, transaction.getType());
         assertEquals(Transaction.Status.AUTHORIZED, transaction.getStatus());
+        assertEquals("1000", transaction.getProcessorResponseCode());
+        assertEquals("Approved", transaction.getProcessorResponseText());
+        assertEquals(ProcessorResponseType.APPROVED, transaction.getProcessorResponseType());
+        assertNotNull(transaction.getAuthorizationExpiresAt());
         assertEquals(Calendar.getInstance().get(Calendar.YEAR), transaction.getCreatedAt().get(Calendar.YEAR));
         assertEquals(Calendar.getInstance().get(Calendar.YEAR), transaction.getUpdatedAt().get(Calendar.YEAR));
 
@@ -209,6 +215,38 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         assertEquals("05", creditCard.getExpirationMonth());
         assertEquals("2009", creditCard.getExpirationYear());
         assertEquals("05/2009", creditCard.getExpirationDate());
+    }
+
+    @Test
+    public void saleWithEloCard() {
+        TransactionRequest request = new TransactionRequest().
+            amount(TransactionAmount.AUTHORIZE.amount).
+            merchantAccountId(ADYEN_MERCHANT_ACCOUNT_ID).
+            creditCard().
+                number(CreditCardNumber.ELO.number).
+                expirationDate("10/2020").
+                cvv("737").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+        Transaction transaction = result.getTarget();
+
+        assertEquals(new BigDecimal("1000.00"), transaction.getAmount());
+        assertEquals("USD", transaction.getCurrencyIsoCode());
+        assertNotNull(transaction.getProcessorAuthorizationCode());
+        assertEquals(Transaction.Type.SALE, transaction.getType());
+        assertEquals(Transaction.Status.AUTHORIZED, transaction.getStatus());
+        assertNotNull(transaction.getAuthorizationExpiresAt());
+        assertEquals(Calendar.getInstance().get(Calendar.YEAR), transaction.getCreatedAt().get(Calendar.YEAR));
+        assertEquals(Calendar.getInstance().get(Calendar.YEAR), transaction.getUpdatedAt().get(Calendar.YEAR));
+
+        CreditCard creditCard = transaction.getCreditCard();
+        assertEquals("506699", creditCard.getBin());
+        assertEquals("1118", creditCard.getLast4());
+        assertEquals("10", creditCard.getExpirationMonth());
+        assertEquals("2020", creditCard.getExpirationYear());
+        assertEquals("10/2020", creditCard.getExpirationDate());
     }
 
     @Test
@@ -258,10 +296,11 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         assertTrue(result.isSuccess());
         Transaction transaction = result.getTarget();
 
-        assertNotNull(transaction.getRiskData());
-        assertNotNull(transaction.getRiskData().getDecision());
-        assertNotNull(transaction.getRiskData().getDeviceDataCaptured());
-        assertNotNull(transaction.getRiskData().getId());
+        RiskData riskData = transaction.getRiskData();
+        assertEquals("Approve", riskData.getDecision());
+        assertFalse(riskData.getDeviceDataCaptured());
+        assertNotNull(riskData.getId());
+        assertNotNull(riskData.getFraudServiceProvider());
     }
 
     @Test
@@ -676,6 +715,14 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         assertNotNull(transaction.getApplePayDetails().getCardholderName());
         assertNotNull(transaction.getApplePayDetails().getLast4());
         assertNotNull(transaction.getApplePayDetails().getImageUrl());
+        assertNotNull(transaction.getApplePayDetails().getBin());
+        assertNotNull(transaction.getApplePayDetails().getPrepaid());
+        assertNotNull(transaction.getApplePayDetails().getHealthcare());
+        assertNotNull(transaction.getApplePayDetails().getDebit());
+        assertNotNull(transaction.getApplePayDetails().getDurbinRegulated());
+        assertNotNull(transaction.getApplePayDetails().getCommercial());
+        assertNotNull(transaction.getApplePayDetails().getPayroll());
+        assertNotNull(transaction.getApplePayDetails().getProductId());
     }
 
     @Test
@@ -1269,7 +1316,38 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         assertEquals(Transaction.Status.PROCESSOR_DECLINED, transaction.getStatus());
         assertEquals("2000", transaction.getProcessorResponseCode());
         assertNotNull(transaction.getProcessorResponseText());
+        assertEquals("Do Not Honor", transaction.getProcessorResponseText());
+        assertEquals(ProcessorResponseType.SOFT_DECLINED, transaction.getProcessorResponseType());
         assertEquals("2000 : Do Not Honor", transaction.getAdditionalProcessorResponse());
+
+        CreditCard creditCard = transaction.getCreditCard();
+        assertEquals("411111", creditCard.getBin());
+        assertEquals("1111", creditCard.getLast4());
+        assertEquals("05", creditCard.getExpirationMonth());
+        assertEquals("2009", creditCard.getExpirationYear());
+        assertEquals("05/2009", creditCard.getExpirationDate());
+    }
+
+    @Test
+    public void saleHardDeclined() {
+        TransactionRequest request = new TransactionRequest().
+            amount(TransactionAmount.HARD_DECLINE.amount).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("05/2009").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+        Transaction transaction = result.getTransaction();
+
+        assertEquals(new BigDecimal("2015.00"), transaction.getAmount());
+        assertEquals(Transaction.Status.PROCESSOR_DECLINED, transaction.getStatus());
+        assertEquals("2015", transaction.getProcessorResponseCode());
+        assertNotNull(transaction.getProcessorResponseText());
+        assertEquals("Transaction Not Allowed", transaction.getProcessorResponseText());
+        assertEquals(ProcessorResponseType.HARD_DECLINED, transaction.getProcessorResponseType());
+        assertEquals("2015 : Transaction Not Allowed", transaction.getAdditionalProcessorResponse());
 
         CreditCard creditCard = transaction.getCreditCard();
         assertEquals("411111", creditCard.getBin());
@@ -1504,10 +1582,17 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
 
     @Test
     public void saleWithMultipleValidationErrorsOnSameField() {
+        Customer customer = gateway.customer().create(new CustomerRequest()).getTarget();
+        CreditCardRequest creditCardRequest = new CreditCardRequest().
+            customerId(customer.getId()).
+            cvv("123").
+            number("5105105105105100").
+            expirationDate("05/12");
+        CreditCard creditCard = gateway.creditCard().create(creditCardRequest).getTarget();
         TransactionRequest request = new TransactionRequest().
             amount(TransactionAmount.AUTHORIZE.amount).
-            paymentMethodToken("foo").
-            customerId("5").
+            paymentMethodToken(creditCard.getToken()).
+            shipsFromPostalCode("1234$$567890").
             creditCard().
                 number(CreditCardNumber.VISA.number).
                 cvv("321").
@@ -1516,17 +1601,17 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
 
         Result<Transaction> result = gateway.transaction().sale(request);
         assertFalse(result.isSuccess());
-        List<ValidationError> errros = result.getErrors().forObject("transaction").onField("base");
+        List<ValidationError> errors = result.getErrors().forObject("transaction").onField("shipsFromPostalCode");
 
         assertNull(result.getTransaction());
         assertNull(result.getCreditCardVerification());
-        assertEquals(2, errros.size());
+        assertEquals(2, errors.size());
 
         List<ValidationErrorCode> validationErrorCodes = new ArrayList<ValidationErrorCode>();
-        validationErrorCodes.add(errros.get(0).getCode());
-        validationErrorCodes.add(errros.get(1).getCode());
-        assertTrue(validationErrorCodes.contains(ValidationErrorCode.TRANSACTION_PAYMENT_METHOD_CONFLICT_WITH_VENMO_SDK));
-        assertTrue(validationErrorCodes.contains(ValidationErrorCode.TRANSACTION_PAYMENT_METHOD_DOES_NOT_BELONG_TO_CUSTOMER));
+        validationErrorCodes.add(errors.get(0).getCode());
+        validationErrorCodes.add(errors.get(1).getCode());
+        assertTrue(validationErrorCodes.contains(ValidationErrorCode.TRANSACTION_SHIPS_FROM_POSTAL_CODE_INVALID_CHARACTERS));
+        assertTrue(validationErrorCodes.contains(ValidationErrorCode.TRANSACTION_SHIPS_FROM_POSTAL_CODE_IS_TOO_LONG));
     }
 
     @Test
@@ -1834,6 +1919,118 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
 
         assertEquals(ValidationErrorCode.INDUSTRY_DATA_TRAVEL_CRUISE_TRAVEL_PACKAGE_IS_INVALID,
                 result.getErrors().forObject("transaction").forObject("industry").onField("travelPackage").get(0).getCode());
+    }
+
+    @Test
+    public void saleWithTravelFlightIndustryData() {
+        Calendar issuedDate = Calendar.getInstance();
+        issuedDate.setTimeZone(TimeZone.getTimeZone("US/Mountain"));
+        issuedDate.add(Calendar.MONTH, 1);
+        issuedDate.add(Calendar.DAY_OF_MONTH, 1);
+
+        Calendar legDate1 = Calendar.getInstance();
+        legDate1.setTimeZone(TimeZone.getTimeZone("US/Mountain"));
+        legDate1.add(Calendar.MONTH, 1);
+        legDate1.add(Calendar.DAY_OF_MONTH, 2);
+
+        Calendar legDate2 = Calendar.getInstance();
+        legDate2.setTimeZone(TimeZone.getTimeZone("US/Mountain"));
+        legDate2.add(Calendar.MONTH, 1);
+        legDate2.add(Calendar.DAY_OF_MONTH, 3);
+
+        TransactionRequest request = new TransactionRequest().
+                amount(TransactionAmount.AUTHORIZE.amount).
+                paymentMethodNonce(Nonce.PayPalOneTimePayment).
+                options().
+                    submitForSettlement(true).
+                    done().
+                industry().
+                    industryType(Transaction.IndustryType.TRAVEL_FLIGHT).
+                    data().
+                        passengerFirstName("John").
+                        passengerLastName("Doe").
+                        passengerMiddleInitial("M").
+                        passengerTitle("Mr.").
+                        issuedDate(issuedDate).
+                        travelAgencyName("Expedia").
+                        travelAgencyCode("12345678").
+                        ticketNumber("ticket-number").
+                        issuingCarrierCode("AA").
+                        customerCode("customer-code").
+                        fareAmount(new BigDecimal("70.00")).
+                        feeAmount(new BigDecimal("10.00")).
+                        taxAmount(new BigDecimal("20.00")).
+                        restrictedTicket(false).
+                        leg().
+                            conjunctionTicket("CJ0001").
+                            exchangeTicket("ET0001").
+                            couponNumber("1").
+                            serviceClass("Y").
+                            carrierCode("AA").
+                            fareBasisCode("W").
+                            flightNumber("AA100").
+                            departureDate(legDate1).
+                            departureAirportCode("MDW").
+                            departureTime("08:00").
+                            arrivalAirportCode("ATX").
+                            arrivalTime("10:00").
+                            stopoverPermitted(false).
+                            fareAmount(new BigDecimal("35.00")).
+                            feeAmount(new BigDecimal("5.00")).
+                            taxAmount(new BigDecimal("10.00")).
+                            endorsementOrRestrictions("NOT REFUNDABLE").
+                            done().
+                        leg().
+                            conjunctionTicket("CJ0002").
+                            exchangeTicket("ET0002").
+                            couponNumber("1").
+                            serviceClass("Y").
+                            carrierCode("AA").
+                            fareBasisCode("W").
+                            flightNumber("AA200").
+                            departureDate(legDate2).
+                            departureAirportCode("ATX").
+                            departureTime("12:00").
+                            arrivalAirportCode("MDW").
+                            arrivalTime("14:00").
+                            stopoverPermitted(false).
+                            fareAmount(new BigDecimal("35.00")).
+                            feeAmount(new BigDecimal("5.00")).
+                            taxAmount(new BigDecimal("10.00")).
+                            endorsementOrRestrictions("NOT REFUNDABLE").
+                            done().
+                        done().
+                    done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+    }
+
+    @Test
+    public void saleWithTravelFlightIndustryDataValidation() {
+        TransactionRequest request = new TransactionRequest().
+                amount(TransactionAmount.AUTHORIZE.amount).
+                paymentMethodNonce(Nonce.PayPalOneTimePayment).
+                options().
+                    submitForSettlement(true).
+                    done().
+                industry().
+                    industryType(Transaction.IndustryType.TRAVEL_FLIGHT).
+                    data().
+                        fareAmount(new BigDecimal("-1.23")).
+                        leg().
+                            fareAmount(new BigDecimal("-1.23")).
+                            done().
+                        done().
+                    done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+
+        assertEquals(ValidationErrorCode.INDUSTRY_DATA_TRAVEL_FLIGHT_FARE_AMOUNT_CANNOT_BE_NEGATIVE,
+                result.getErrors().forObject("transaction").forObject("industry").onField("fareAmount").get(0).getCode());
+        assertEquals(ValidationErrorCode.INDUSTRY_DATA_LEG_TRAVEL_FLIGHT_FARE_AMOUNT_CANNOT_BE_NEGATIVE,
+                result.getErrors().forObject("transaction").forObject("industry").forObject("legs").forObject("index_0").onField("fareAmount").get(0).getCode());
     }
 
     @Test
@@ -3246,6 +3443,195 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
     }
 
     @Test
+    public void saleVisaReceivesNetworkTransactionIdentifier() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("05/2009").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        Transaction transaction = result.getTarget();
+        assertTrue(transaction.getNetworkTransactionId().length() > 0);
+    }
+
+    @Test
+    public void saleNonVisaDoesNotReceiveNetworkTransactionIdentifier() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            creditCard().
+                number(CreditCardNumber.MASTER_CARD.number).
+                expirationDate("05/2009").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        Transaction transaction = result.getTarget();
+        assertNull(transaction.getNetworkTransactionId());
+    }
+
+    @Test
+    public void saleWithExternalVaultStatusVisa() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("05/2009").
+                done().
+            externalVault().
+                vaulted().
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+        Transaction transaction = result.getTarget();
+        assertTrue(transaction.getNetworkTransactionId().length() > 0);
+    }
+
+    @Test
+    public void saleWithExternalVaultStatusNonVisa() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            creditCard().
+                number(CreditCardNumber.MASTER_CARD.number).
+                expirationDate("05/2009").
+                done().
+            externalVault().
+                vaulted().
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+        Transaction transaction = result.getTarget();
+        assertNull(transaction.getNetworkTransactionId());
+    }
+
+    @Test
+    public void saleWithExternalVaultPreviousNetworkTransactionId() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("05/2009").
+                done().
+            externalVault().
+                vaulted().
+                previousNetworkTransactionId("123456789012345").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+        Transaction transaction = result.getTarget();
+        assertTrue(transaction.getNetworkTransactionId().length() > 0);
+    }
+
+    @Test
+    public void saleWithExternalVaultStatusVaultedWithoutPreviousNetworkTransactionId() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("05/2009").
+                done().
+            externalVault().
+                vaulted().
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+        Transaction transaction = result.getTarget();
+        assertTrue(transaction.getNetworkTransactionId().length() > 0);
+    }
+
+    @Test
+    public void saleWithExternalVaultValidationErrorInvalidPaymentInstrumentWithExternalVault() {
+        Customer customer = gateway.customer().create(new CustomerRequest()).getTarget();
+        CreditCardRequest creditCardRequest = new CreditCardRequest().
+            customerId(customer.getId()).
+            cvv("123").
+            number("5105105105105100").
+            expirationDate("05/12");
+        CreditCard creditCard = gateway.creditCard().create(creditCardRequest).getTarget();
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            paymentMethodToken(creditCard.getToken()).
+            externalVault().
+                vaulted().
+                previousNetworkTransactionId("123456789012345").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+        assertEquals(
+            ValidationErrorCode.TRANSACTION_PAYMENT_INSTRUMENT_WITH_EXTERNAL_VAULT_IS_INVALID,
+            result.getErrors().forObject("transaction").onField("external_vault").get(0).getCode()
+        );
+    }
+
+    @Test
+    public void saleWithExternalVaultValidationErrorInvalidStatusWithPreviousNetworkTransactionId() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("05/2009").
+                done().
+            externalVault().
+                willVault().
+                previousNetworkTransactionId("123456789012345").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+        assertEquals(
+            ValidationErrorCode.TRANSACTION_EXTERNAL_VAULT_STATUS_WITH_PREVIOUS_NETWORK_TRANSACTION_ID_IS_INVALID,
+            result.getErrors().forObject("transaction").forObject("external_vault").onField("status").get(0).getCode()
+        );
+    }
+
+    @Test
+    public void saleWithExternalVaultValidationErrorInvalidPreviousNetworkTransactionId() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("05/2009").
+                done().
+            externalVault().
+                vaulted().
+                previousNetworkTransactionId("not_valid").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+        assertEquals(
+            ValidationErrorCode.TRANSACTION_EXTERNAL_VAULT_PREVIOUS_NETWORK_TRANSACTION_ID_IS_INVALID,
+            result.getErrors().forObject("transaction").forObject("external_vault").onField("previousNetworkTransactionId").get(0).getCode()
+        );
+    }
+
+    @Test
+    public void saleWithExternalVaultValidationErrorInvalidCardType() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("10.00")).
+            creditCard().
+                number(CreditCardNumber.MASTER_CARD.number).
+                expirationDate("05/2009").
+                done().
+            externalVault().
+                vaulted().
+                previousNetworkTransactionId("123456789012345").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+        assertEquals(
+            ValidationErrorCode.TRANSACTION_EXTERNAL_VAULT_CARD_TYPE_IS_INVALID,
+            result.getErrors().forObject("transaction").forObject("external_vault").onField("previousNetworkTransactionId").get(0).getCode()
+        );
+    }
+
+    @Test
     public void createTransactionFromTransparentRedirectWithAddress() {
         TransactionRequest request = new TransactionRequest();
 
@@ -3474,7 +3860,7 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
     }
 
     @Test
-    public void findWithAuthAdjustments() throws Exception {
+    public void findWithAuthAdjustmentApproved() throws Exception {
         Transaction foundTransaction = gateway.transaction().find(AUTH_ADJUSTMENT_TRANSACTION_ID);
         List<AuthorizationAdjustment> authorizationAdjustments = foundTransaction.getAuthorizationAdjustments();
         AuthorizationAdjustment authorizationAdjustment = authorizationAdjustments.get(0);
@@ -3484,6 +3870,35 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         assertEquals(Calendar.getInstance().get(Calendar.YEAR), authorizationAdjustment.getTimestamp().get(Calendar.YEAR));
         assertEquals("1000", authorizationAdjustment.getProcessorResponseCode());
         assertEquals("Approved", authorizationAdjustment.getProcessorResponseText());
+        assertEquals(ProcessorResponseType.APPROVED, authorizationAdjustment.getProcessorResponseType());
+    }
+
+    @Test
+    public void findWithAuthAdjustmentSoftDeclined() throws Exception {
+        Transaction foundTransaction = gateway.transaction().find(AUTH_ADJUSTMENT_SOFT_DECLINED_TRANSACTION_ID);
+        List<AuthorizationAdjustment> authorizationAdjustments = foundTransaction.getAuthorizationAdjustments();
+        AuthorizationAdjustment authorizationAdjustment = authorizationAdjustments.get(0);
+
+        assertEquals(new BigDecimal("-20.00"), authorizationAdjustment.getAmount());
+        assertEquals(false, authorizationAdjustment.isSuccess());
+        assertEquals(Calendar.getInstance().get(Calendar.YEAR), authorizationAdjustment.getTimestamp().get(Calendar.YEAR));
+        assertEquals("3000", authorizationAdjustment.getProcessorResponseCode());
+        assertEquals("Processor Network Unavailable - Try Again", authorizationAdjustment.getProcessorResponseText());
+        assertEquals(ProcessorResponseType.SOFT_DECLINED, authorizationAdjustment.getProcessorResponseType());
+    }
+
+    @Test
+    public void findWithAuthAdjustmentHardDeclined() throws Exception {
+        Transaction foundTransaction = gateway.transaction().find(AUTH_ADJUSTMENT_HARD_DECLINED_TRANSACTION_ID);
+        List<AuthorizationAdjustment> authorizationAdjustments = foundTransaction.getAuthorizationAdjustments();
+        AuthorizationAdjustment authorizationAdjustment = authorizationAdjustments.get(0);
+
+        assertEquals(new BigDecimal("-20.00"), authorizationAdjustment.getAmount());
+        assertEquals(false, authorizationAdjustment.isSuccess());
+        assertEquals(Calendar.getInstance().get(Calendar.YEAR), authorizationAdjustment.getTimestamp().get(Calendar.YEAR));
+        assertEquals("2015", authorizationAdjustment.getProcessorResponseCode());
+        assertEquals("Transaction Not Allowed", authorizationAdjustment.getProcessorResponseText());
+        assertEquals(ProcessorResponseType.HARD_DECLINED, authorizationAdjustment.getProcessorResponseType());
     }
 
     @Test
@@ -4309,6 +4724,28 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         collection = gateway.transaction().search(searchRequest);
 
         assertEquals(0, collection.getMaximumSize());
+    }
+
+    @Test
+    public void searchOnCreditCardTypeElo() {
+        TransactionRequest request = new TransactionRequest().
+            amount(TransactionAmount.AUTHORIZE.amount).
+            merchantAccountId(ADYEN_MERCHANT_ACCOUNT_ID).
+            creditCard().
+                number(CreditCardNumber.ELO.number).
+                expirationDate("10/2020").
+                cvv("737").
+                done();
+
+        Transaction transaction = gateway.transaction().sale(request).getTarget();
+
+        TransactionSearchRequest searchRequest = new TransactionSearchRequest().
+            id().is(transaction.getId()).
+            creditCardCardType().is(CreditCard.CardType.ELO);
+
+        ResourceCollection<Transaction> collection = gateway.transaction().search(searchRequest);
+
+        assertEquals(1, collection.getMaximumSize());
     }
 
     @Test
@@ -5683,6 +6120,30 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         assertNotNull(saleResult.getTarget().getPayPalDetails().getDebugId());
         assertNull(saleResult.getTarget().getPayPalDetails().getToken());
 
+        assertEquals(
+            PaymentInstrumentType.PAYPAL_ACCOUNT,
+            saleResult.getTarget().getPaymentInstrumentType()
+        );
+    }
+
+    @Test
+    public void createPayPalTransactionWithLocalPaymentContent() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("100.00")).
+            options().
+                submitForSettlement(true).
+                done().
+            paypalAccount().
+              payerId("fake-payer-id").
+              paymentId("fake-payment-id").
+              done();
+
+        Result<Transaction> saleResult = gateway.transaction().sale(request);
+
+        assertTrue(saleResult.isSuccess());
+        assertNotNull(saleResult.getTarget().getPayPalDetails());
+        assertEquals("fake-payer-id", saleResult.getTarget().getPayPalDetails().getPayerId());
+        assertEquals("fake-payment-id", saleResult.getTarget().getPayPalDetails().getPaymentId());
         assertEquals(
             PaymentInstrumentType.PAYPAL_ACCOUNT,
             saleResult.getTarget().getPaymentInstrumentType()

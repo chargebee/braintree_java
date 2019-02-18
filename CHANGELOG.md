@@ -1,3 +1,51 @@
+## 2.91.0
+* Add `bin` field to `PaymentMethodNonceDetails`
+* Add `prepaid` field to `ApplePayDetails`
+* Add `healthcare` field to `ApplePayDetails`
+* Add `debit` field to `ApplePayDetails`
+* Add `durbinRegulated` field to `ApplePayDetails`
+* Add `commercial` field to `ApplePayDetails`
+* Add `payroll` field to `ApplePayDetails`
+* Add `issuingBank` field to `ApplePayDetails`
+* Add `countryOfIssuance` field to `ApplePayDetails`
+* Add `productId` field to `ApplePayDetails`
+* Add `bin` field to `ApplePayDetails`
+* Add `globalId` field to `ApplePayDetails`
+* Add Error indicating pdf uploads too long for dispute evidence.
+
+## 2.90.0
+* Add `fraudServiceProvider` field to `riskData`
+
+## 2.89.0
+* Allow PayPal payment ID and payer ID to be passed during transaction create
+* Fix bug where SDK expects `granted_payment_instrument_revoked` instead of `granted_payment_method_revoked`
+
+## 2.88.0
+* Add `travel_flight` support to industry-specific data
+
+## 2.87.0
+* Add `GrantedPaymentMethodRevoked` webhook response objects
+* Add missing `getCardholderName` method to ApplePayCard class
+* Add missing nonce detail params for non-credit card nonces
+
+## 2.86.0
+* Add `authorizationExpiresAt` to `Transaction`
+
+## 2.85.0
+* Add venmo account details to payment method nonce model
+* Add `ProcessorResponseType` to `Transaction`, `AuthorizationAdjustment`, and `CreditCardVerification`.
+
+## 2.84.0
+* Add `lastFour` to `PaymentMethodNonceDetails`
+* Remove final specification from `MerchantAccountGateway` (#64)
+* Fix dispute results in transactions not showing the correct status sometimes
+* Pass response message to http error (#66)
+* Add `getNetworkTransactionId` as new field on subfield transaction response.
+* Add support for `ExternalVaultRequest` for TransactionRequest
+* Add support for `LocalPaymentCompleted` webhook notifications.
+* Close FileInputStream in `addFilePart` if an exception occurs when reading.
+* Add `ProcessorResponseType` to `Transaction`, `AuthorizationAdjustment`, and `CreditCardVerification`.
+
 ## 2.83.1
 * Restore Javadoc
 

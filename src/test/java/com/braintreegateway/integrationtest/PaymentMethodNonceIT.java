@@ -54,8 +54,50 @@ public class PaymentMethodNonceIT extends IntegrationTest {
         assertEquals(false, nonce.isConsumed());
         assertEquals(false, nonce.isDefault());
         assertNotNull(nonce.getDetails());
+        assertEquals("401288", nonce.getDetails().getBin());
         assertEquals("81", nonce.getDetails().getLastTwo());
         assertEquals("Visa", nonce.getDetails().getCardType());
+    }
+
+    @Test
+    public void findVenmoAccountNonceReturnsValidValues() {
+        String nonceString = "fake-venmo-account-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(false, nonce.isConsumed());
+        assertEquals(false, nonce.isDefault());
+        assertNotNull(nonce.getDetails());
+        assertEquals("99", nonce.getDetails().getLastTwo());
+        assertEquals("venmojoe", nonce.getDetails().getUsername());
+        assertEquals("Venmo-Joe-1", nonce.getDetails().getVenmoUserId());
+    }
+
+    @Test
+    public void findApplePayCardNonceReturnsValidValues() {
+        String nonceString = "fake-apple-pay-visa-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(false, nonce.isConsumed());
+        assertEquals(false, nonce.isDefault());
+        assertNotNull(nonce.getDetails());
+        assertEquals("Visa", nonce.getDetails().getCardType());
+        assertEquals("Visa Apple Pay Cardholder", nonce.getDetails().getCardholderName());
+        assertEquals("Visa 8886", nonce.getDetails().getPaymentInstrumentName());
+        assertEquals("81", nonce.getDetails().getDpanLastTwo());
+    }
+
+    @Test
+    public void findPayPalAccountNonceReturnsValidValues() {
+        String nonceString = "fake-paypal-billing-agreement-nonce";
+        PaymentMethodNonce nonce = gateway.paymentMethodNonce().find(nonceString);
+        assertNotNull(nonce);
+        assertEquals(nonceString, nonce.getNonce());
+        assertEquals(false, nonce.isConsumed());
+        assertEquals(false, nonce.isDefault());
+        assertNotNull(nonce.getDetails());
+        assertEquals("jane.doe@paypal.com", nonce.getDetails().getEmail());
     }
 
     @Test
@@ -167,6 +209,7 @@ public class PaymentMethodNonceIT extends IntegrationTest {
         assertNotNull(foundNonce.getThreeDSecureInfo().getCAVV());
         assertNotNull(foundNonce.getThreeDSecureInfo().getXID());
         assertNotNull(foundNonce.getThreeDSecureInfo().getECIFlag());
+        assertNotNull(foundNonce.getThreeDSecureInfo().getThreeDSecureVersion());
     }
 
     @Test

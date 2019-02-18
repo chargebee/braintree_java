@@ -88,7 +88,8 @@ public class Transaction {
 
     public enum IndustryType {
         LODGING("lodging"),
-        TRAVEL_CRUISE("travel_cruise");
+        TRAVEL_CRUISE("travel_cruise"),
+        TRAVEL_FLIGHT("travel_flight");
 
         private final String name;
 
@@ -154,6 +155,7 @@ public class Transaction {
     private String processorAuthorizationCode;
     private String processorResponseCode;
     private String processorResponseText;
+    private ProcessorResponseType processorResponseType;
     private String processorSettlementResponseCode;
     private String processorSettlementResponseText;
     private String additionalProcessorResponse;
@@ -195,6 +197,9 @@ public class Transaction {
         return responseParams;
     }
 	
+    private String networkTransactionId;
+    private Calendar authorizationExpiresAt;
+
     public Transaction(NodeWrapper node) {
         responseParams = node.getFormParameters();
         amount = node.findBigDecimal("amount");
@@ -264,6 +269,7 @@ public class Transaction {
         processorAuthorizationCode = node.findString("processor-authorization-code");
         processorResponseCode = node.findString("processor-response-code");
         processorResponseText = node.findString("processor-response-text");
+        processorResponseType = EnumUtils.findByName(ProcessorResponseType.class, node.findString("processor-response-type"), ProcessorResponseType.UNRECOGNIZED);
         processorSettlementResponseCode = node.findString("processor-settlement-response-code");
         processorSettlementResponseText = node.findString("processor-settlement-response-text");
         additionalProcessorResponse = node.findString("additional-processor-response");
@@ -346,6 +352,10 @@ public class Transaction {
         if (facilitatorDetailsNode != null) {
             facilitatorDetails = new FacilitatorDetails(facilitatorDetailsNode);
         }
+
+        networkTransactionId = node.findString("network-transaction-id");
+
+        authorizationExpiresAt = node.findDateTime("authorization-expires-at");
     }
 
     public List<AddOn> getAddOns() {
@@ -494,6 +504,10 @@ public class Transaction {
 
     public String getProcessorResponseText() {
         return processorResponseText;
+    }
+
+    public ProcessorResponseType getProcessorResponseType() {
+        return processorResponseType;
     }
 
     public String getProcessorSettlementResponseCode() {
@@ -666,4 +680,11 @@ public class Transaction {
         return gateway.transactionLineItem().findAll(id);
     }
 
+    public String getNetworkTransactionId() {
+        return networkTransactionId;
+    }
+
+    public Calendar getAuthorizationExpiresAt() {
+        return authorizationExpiresAt;
+    }
 }
