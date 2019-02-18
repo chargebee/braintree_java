@@ -20,10 +20,10 @@ public class WebhookNotificationGateway {
 
     public WebhookNotification parse(String signature, String payload) {        
         validateSignature(signature, payload);
-        return _parse(payload);
+        return _parse(signature, payload);
     }
-    
-    public WebhookNotification _parse(String payload) {
+
+    public WebhookNotification _parse(String signature, String payload) {
         if (signature == null) {
             throw new InvalidSignatureException("signature cannot be null");
         }

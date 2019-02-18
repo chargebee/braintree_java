@@ -190,16 +190,15 @@ public class Transaction {
     private List<AuthorizationAdjustment> authorizationAdjustments;
     private FacilitatedDetails facilitatedDetails;
     private FacilitatorDetails facilitatorDetails;
-	
+    private String networkTransactionId;
+    private Calendar authorizationExpiresAt;
+
 	private Map<String, String> responseParams = new HashMap<String, String>();
 	
     public Map<String, String> getResponseParams() {
         return responseParams;
     }
 	
-    private String networkTransactionId;
-    private Calendar authorizationExpiresAt;
-
     public Transaction(NodeWrapper node) {
         responseParams = node.getFormParameters();
         amount = node.findBigDecimal("amount");
