@@ -23,7 +23,7 @@ public class WebhookNotificationGateway {
             throw new InvalidSignatureException("signature cannot be null");
         }        
         validateSignature(signature, payload);
-        return _parse(signature, payload);
+        return _parse(payload);
     }
 
     public WebhookNotification _parse(String payload) {        
