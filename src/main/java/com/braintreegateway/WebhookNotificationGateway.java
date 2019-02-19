@@ -18,15 +18,15 @@ public class WebhookNotificationGateway {
         this.configuration = configuration;
     }
 
-    public WebhookNotification parse(String signature, String payload) {        
+    public WebhookNotification parse(String signature, String payload) {
+        if (signature == null) {
+            throw new InvalidSignatureException("signature cannot be null");
+        }        
         validateSignature(signature, payload);
         return _parse(signature, payload);
     }
 
-    public WebhookNotification _parse(String signature, String payload) {
-        if (signature == null) {
-            throw new InvalidSignatureException("signature cannot be null");
-        }
+    public WebhookNotification _parse(String payload) {        
         if (payload == null) {
             throw new InvalidSignatureException("payload cannot be null");
         }
