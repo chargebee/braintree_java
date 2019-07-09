@@ -1,3 +1,63 @@
+## 2.98.0
+* Avoid throwing an exception when Refunded Amount is empty in the Transaction-Level Fee Report
+* Add `captureId` field to `LocalPaymentDetail`
+* Add `refundId` field to `LocalPaymentDetail`
+* Add `debugId` field to `LocalPaymentDetail`
+* Add `transactionFeeAmount` field to `LocalPaymentDetail`
+* Add `transactionFeeCurrencyIsoCode` field to `LocalPaymentDetail`
+* Add `refundFromTransactionFeeAmount` field to `LocalPaymentDetail`
+* Add `refundFromTransactionFeeCurrencyIsoCode` field to `LocalPaymentDetail`
+* Add `dsTransactionId` to `ThreeDSecurePassthruRequest`
+
+## 2.97.0
+* Fix serialization of `ThreeDSecureLookupAdditionalInformation`
+* Return `AuthenticationInsight` when requested on `PaymentMethodNonce.create`
+* Add `roomTax` field to `TransactionIndustryDataRequest`
+* Add `noShow` field to `TransactionIndustryDataRequest`
+* Add `advancedDeposit` field to `TransactionIndustryDataRequest`
+* Add `fireSafe` field to `TransactionIndustryDataRequest`
+* Add `propertyPhone` field to `TransactionIndustryDataRequest`
+* Add `additionalChargeRequests` field to `TransactionIndustryDataRequest`
+* Add `payerInfo` to `PaymentMethodNonceDetails` class
+* Add `PostalCodeIsRequiredForCardBrandAndProcessor` to validation errors
+
+## 2.96.0
+* Add `ThreeDSecureLookup`
+
+## 2.95.0
+* Add `revokedAt` field to `PayPalAccount`
+* Add support for `PAYMENT_METHOD_REVOKED_BY_CUSTOMER` webhook
+* Add `payment_method_nonce` field to `LocalPaymentCompleted` webhook
+* Add `transaction` field to `LocalPaymentCompleted` webhook
+* Add `LocalPaymentDetails` to transactions
+
+## 2.94.0
+* Add `refundFromTransactionFeeAmount` field to `PayPalDetails`
+* Add `refundFromTransactionFeeCurrencyIsoCode` field to `PayPalDetails`
+* Add `token_issuance` gateway reject status to support Venmo transactions
+* Add `threeDSecureVersion` to `ThreeDSecurePassthruRequest`
+
+## 2.93.0
+* Add `accountType` to `Transaction`, `CreditCard`, `PaymentMethod`, and `CreditCardVerification`
+
+## 2.93.0
+* Add `accountType` to `Transaction`, `CreditCard`, `PaymentMethod`, and `CreditCardVerification`
+
+## 2.92.0
+* Deprecate `GRANTED_PAYMENT_INSTRUMENT_UPDATE` and add `GRANTOR_UPDATED_GRANTED_PAYMENT_METHOD` and `RECIPIENT_UPDATED_GRANTED_PAYMENT_METHOD`
+* Fix bug where dates in the Transaction-Level Fee Report could be parsed incorrectly due to timezone differences
+* Add External Vault and Risk Data to `CreditCardVerificationRequest`
+* Add `prepaid` field to `AndroidPayDetails`
+* Add `healthcare` field to `AndroidPayDetails`
+* Add `debit` field to `AndroidPayDetails`
+* Add `durbinRegulated` field to `AndroidPayDetails`
+* Add `commercial` field to `AndroidPayDetails`
+* Add `payroll` field to `AndroidPayDetails`
+* Add `issuingBank` field to `AndroidPayDetails`
+* Add `countryOfIssuance` field to `AndroidPayDetails`
+* Add `productId` field to `AndroidPayDetails`
+* Add `globalId` field to `AndroidPayDetails`
+
 ## 2.91.0
 * Add `bin` field to `PaymentMethodNonceDetails`
 * Add `prepaid` field to `ApplePayDetails`

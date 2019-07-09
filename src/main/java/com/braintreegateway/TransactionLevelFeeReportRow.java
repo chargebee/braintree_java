@@ -69,7 +69,7 @@ public class TransactionLevelFeeReportRow {
         this.cardType = recordMap.get("Card Type");
         this.first6OfCreditCard = recordMap.get("First 6 of CC");
         this.issuingBank = recordMap.get("Issuing Bank");
-        this.refundedAmount = new BigDecimal(recordMap.get("Refunded Amount"));
+        this.refundedAmount = maybeParseBigDecimal(recordMap.get("Refunded Amount"));
         this.exchangeRate = new BigDecimal(recordMap.get("Exchange Rate"));
         this.orderId = recordMap.get("Order ID");
         this.acquirerReferenceNumber = recordMap.get("Acquirer Reference Number");
@@ -244,10 +244,10 @@ public class TransactionLevelFeeReportRow {
         return totalFeeAmount;
     }
 
-    private Calendar parseDate(String dateString) throws ParseException {
+    static Calendar parseDate(String dateString) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        dateFormat.setTimeZone(TimeZone.getDefault());
+        Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
         calendar.setTime(dateFormat.parse(dateString));
         return calendar;
     }

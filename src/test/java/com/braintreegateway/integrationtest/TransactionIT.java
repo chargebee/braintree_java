@@ -99,6 +99,113 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
     }
 
     @Test
+    public void createWithAccountTypeCredit() {
+        TransactionRequest request = new TransactionRequest().
+            amount(TransactionAmount.AUTHORIZE.amount).
+            merchantAccountId("hiper_brl").
+            creditCard().
+                number(CreditCardNumber.HIPER.number).
+                expirationDate("05/2009").
+                done().
+            options().
+                creditCard().
+                    accountType("credit").
+                    done().
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+        Transaction transaction = result.getTarget();
+        assertEquals("credit", transaction.getCreditCard().getAccountType());
+    }
+
+    @Test
+    public void createWithAccountTypeDebit() {
+        TransactionRequest request = new TransactionRequest().
+            amount(TransactionAmount.AUTHORIZE.amount).
+            merchantAccountId("hiper_brl").
+            creditCard().
+                number(CreditCardNumber.HIPER.number).
+                expirationDate("05/2009").
+                done().
+            options().
+                submitForSettlement(true).
+                creditCard().
+                    accountType("debit").
+                    done().
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+        Transaction transaction = result.getTarget();
+        assertEquals("debit", transaction.getCreditCard().getAccountType());
+    }
+
+    @Test
+    public void createWithErrorAccountTypeInvalid() {
+        TransactionRequest request = new TransactionRequest().
+            amount(TransactionAmount.AUTHORIZE.amount).
+            merchantAccountId("hiper_brl").
+            creditCard().
+                number(CreditCardNumber.HIPER.number).
+                expirationDate("05/2009").
+                done().
+            options().
+                submitForSettlement(true).
+                creditCard().
+                    accountType("ach").
+                    done().
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+        assertEquals(ValidationErrorCode.TRANSACTION_OPTIONS_CREDIT_CARD_ACCOUNT_TYPE_IS_INVALID,
+                result.getErrors().forObject("transaction").forObject("options").forObject("creditCard").onField("accountType").get(0).getCode());
+    }
+
+    @Test
+    public void createWithErrorAccountTypeNotSupported() {
+        TransactionRequest request = new TransactionRequest().
+            amount(TransactionAmount.AUTHORIZE.amount).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("05/2009").
+                done().
+            options().
+                submitForSettlement(true).
+                creditCard().
+                    accountType("credit").
+                    done().
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+        assertEquals(ValidationErrorCode.TRANSACTION_OPTIONS_CREDIT_CARD_ACCOUNT_TYPE_NOT_SUPPORTED,
+                result.getErrors().forObject("transaction").forObject("options").forObject("creditCard").onField("accountType").get(0).getCode());
+    }
+
+    @Test
+    public void createWithErrorAccountTypeDebitDoesNotSupportAuths() {
+        TransactionRequest request = new TransactionRequest().
+            amount(TransactionAmount.AUTHORIZE.amount).
+            merchantAccountId("hiper_brl").
+            creditCard().
+                number(CreditCardNumber.HIPER.number).
+                expirationDate("05/2009").
+                done().
+            options().
+                creditCard().
+                    accountType("debit").
+                    done().
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+        assertEquals(ValidationErrorCode.TRANSACTION_OPTIONS_CREDIT_CARD_ACCOUNT_TYPE_DEBIT_DOES_NOT_SUPPORT_AUTHS,
+                result.getErrors().forObject("transaction").forObject("options").forObject("creditCard").onField("accountType").get(0).getCode());
+    }
+
+    @Test
     public void cloneTransaction() {
         TransactionRequest request = new TransactionRequest().
             amount(TransactionAmount.AUTHORIZE.amount).
@@ -782,6 +889,13 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         assertNotNull(androidPayDetails.getLast4());
         assertNotNull(androidPayDetails.getExpirationMonth());
         assertNotNull(androidPayDetails.getExpirationYear());
+        assertNotNull(androidPayDetails.getPrepaid());
+        assertNotNull(androidPayDetails.getHealthcare());
+        assertNotNull(androidPayDetails.getDebit());
+        assertNotNull(androidPayDetails.getDurbinRegulated());
+        assertNotNull(androidPayDetails.getCommercial());
+        assertNotNull(androidPayDetails.getPayroll());
+        assertNotNull(androidPayDetails.getProductId());
     }
 
     @Test
@@ -990,6 +1104,10 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
                 eciFlag("02").
                 cavv("some_cavv").
                 xid("some_xid").
+                authenticationResponse("Y").
+                directoryResponse("Y").
+                cavvAlgorithm("2").
+                threeDSecureVersion("1.0.2").
                 done();
 
         Result<Transaction> result = gateway.transaction().sale(request);
@@ -1000,9 +1118,140 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
     }
 
     @Test
+    public void saleWithThreeDSecurePassThruVersion2() {
+        TransactionRequest request = new TransactionRequest().
+            merchantAccountId(THREE_D_SECURE_MERCHANT_ACCOUNT_ID).
+            amount(TransactionAmount.AUTHORIZE.amount).
+            creditCard().
+            number(CreditCardNumber.VISA.number).
+            expirationDate("05/2009").
+            done().
+            threeDSecurePassThru().
+            eciFlag("02").
+            cavv("some_cavv").
+            authenticationResponse("Y").
+            directoryResponse("Y").
+            cavvAlgorithm("2").
+            threeDSecureVersion("2.0.1").
+            dsTransactionId("some_ds_transaction_id").
+            done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+
+        Transaction transaction = result.getTarget();
+        assertEquals(Transaction.Status.AUTHORIZED, transaction.getStatus());
+    }
+
+    @Test
+    public void saleWithThreeDSecureAdyenPassThru() {
+        TransactionRequest request = new TransactionRequest().
+            merchantAccountId(ADYEN_MERCHANT_ACCOUNT_ID).
+            amount(TransactionAmount.AUTHORIZE.amount).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("10/2020").
+                cvv("737").
+                done().
+            threeDSecurePassThru().
+                eciFlag("02").
+                cavv("some_cavv").
+                threeDSecureVersion("1.2.3").
+                xid("some_xid").
+                authenticationResponse("Y").
+                directoryResponse("Y").
+                cavvAlgorithm("2").
+                threeDSecureVersion("1.0.2").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+
+        Transaction transaction = result.getTarget();
+        assertEquals(Transaction.Status.AUTHORIZED, transaction.getStatus());
+    }
+
+    @Test
+    public void saleWithThreeDSecureAdyenPassThruMissingAuthenticationResponse() {
+        TransactionRequest request = new TransactionRequest().
+            merchantAccountId(ADYEN_MERCHANT_ACCOUNT_ID).
+            amount(TransactionAmount.AUTHORIZE.amount).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("10/2020").
+                cvv("737").
+                done().
+            threeDSecurePassThru().
+                eciFlag("02").
+                cavv("some_cavv").
+                xid("some_xid").
+                authenticationResponse("").
+                directoryResponse("Y").
+                cavvAlgorithm("2").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+
+        assertEquals(ValidationErrorCode.TRANSACTION_THREE_D_SECURE_PASS_THRU_AUTHENTICATION_RESPONSE_IS_INVALID,
+                result.getErrors().forObject("transaction").forObject("threeDSecurePassThru").onField("authenticationResponse").get(0).getCode());
+    }
+
+    @Test
+    public void saleWithThreeDSecureAdyenPassThruMissingDirectoryResponse() {
+        TransactionRequest request = new TransactionRequest().
+            merchantAccountId(ADYEN_MERCHANT_ACCOUNT_ID).
+            amount(TransactionAmount.AUTHORIZE.amount).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("10/2020").
+                cvv("737").
+                done().
+            threeDSecurePassThru().
+                eciFlag("02").
+                cavv("some_cavv").
+                xid("some_xid").
+                authenticationResponse("Y").
+                directoryResponse("").
+                cavvAlgorithm("2").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+
+        assertEquals(ValidationErrorCode.TRANSACTION_THREE_D_SECURE_PASS_THRU_DIRECTORY_RESPONSE_IS_INVALID,
+                result.getErrors().forObject("transaction").forObject("threeDSecurePassThru").onField("directoryResponse").get(0).getCode());
+    }
+
+    public void saleWithThreeDSecureAdyenPassThruMissingCavvAlgorithm() {
+        TransactionRequest request = new TransactionRequest().
+            merchantAccountId(ADYEN_MERCHANT_ACCOUNT_ID).
+            amount(TransactionAmount.AUTHORIZE.amount).
+            creditCard().
+                number(CreditCardNumber.VISA.number).
+                expirationDate("10/2020").
+                cvv("737").
+                done().
+            threeDSecurePassThru().
+                eciFlag("02").
+                cavv("some_cavv").
+                xid("some_xid").
+                authenticationResponse("Y").
+                directoryResponse("Y").
+                cavvAlgorithm("").
+                done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+
+        assertEquals(ValidationErrorCode.TRANSACTION_THREE_D_SECURE_PASS_THRU_CAVV_ALGORITHM_IS_INVALID,
+                result.getErrors().forObject("transaction").forObject("threeDSecurePassThru").onField("cavvAlgorithm").get(0).getCode());
+    }
+
+    @Test
     public void saleErrorWithThreeDSecurePassThruWhenMerchantAccountDoesNotSupportCardType() {
         TransactionRequest request = new TransactionRequest().
-            merchantAccountId("adyen_ma").
+            merchantAccountId("heartland_ma").
             amount(TransactionAmount.AUTHORIZE.amount).
             creditCard().
                 number(CreditCardNumber.VISA.number).
@@ -1085,50 +1334,6 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
 
         assertEquals(ValidationErrorCode.TRANSACTION_THREE_D_SECURE_PASS_THRU_ECI_FLAG_IS_INVALID,
                 result.getErrors().forObject("transaction").forObject("threeDSecurePassThru").onField("eciFlag").get(0).getCode());
-    }
-
-    @Test
-    public void saleWithIdealPaymentId() {
-        TransactionRequest request = new TransactionRequest()
-            .merchantAccountId("ideal_merchant_account")
-            .amount(SandboxValues.TransactionAmount.AUTHORIZE.amount)
-            .paymentMethodNonce(TestHelper.generateValidIdealPaymentId(gateway))
-            .orderId("ABC123")
-            .options()
-                .submitForSettlement(true)
-                .done();
-
-        Result<Transaction> result = gateway.transaction().sale(request);
-        assertTrue(result.isSuccess());
-
-        Transaction transaction = result.getTarget();
-        assertEquals(PaymentInstrumentType.IDEAL_PAYMENT, transaction.getPaymentInstrumentType());
-        assertEquals(Transaction.Status.SETTLED, transaction.getStatus());
-
-        IdealPaymentDetails idealPaymentDetails = transaction.getIdealPaymentDetails();
-        assertTrue(Pattern.matches("^idealpayment_\\w{6,}$", idealPaymentDetails.getIdealPaymentId()));
-        assertTrue(Pattern.matches("^\\d{16,}$", idealPaymentDetails.getIdealTransactionId()));
-        assertTrue(idealPaymentDetails.getImageUrl().startsWith("https://"));
-        assertNotNull(idealPaymentDetails.getMaskedIban());
-        assertNotNull(idealPaymentDetails.getBic());
-    }
-
-    @Test
-    public void saleWithInvalidIdealPaymentId() {
-        BigDecimal amount = new BigDecimal("3.00");
-
-        TransactionRequest request = new TransactionRequest()
-            .merchantAccountId("ideal_merchant_account")
-            .amount(amount)
-            .paymentMethodNonce(TestHelper.generateValidIdealPaymentId(gateway, amount))
-            .options()
-                .submitForSettlement(true)
-                .done();
-
-        Result<Transaction> result = gateway.transaction().sale(request);
-        assertFalse(result.isSuccess());
-        assertEquals(ValidationErrorCode.TRANSACTION_IDEAL_PAYMENT_NOT_COMPLETE,
-                result.getErrors().forObject("transaction").onField("paymentMethodNonce").get(0).getCode());
     }
 
     @Test
@@ -1372,6 +1577,22 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
 
         assertEquals(Transaction.Status.GATEWAY_REJECTED, transaction.getStatus());
         assertEquals(Transaction.GatewayRejectionReason.FRAUD, transaction.getGatewayRejectionReason());
+    }
+
+    @Test
+    public void saleWithTokenIssuanceErrorNonceIsRejected() {
+        TransactionRequest request = new TransactionRequest()
+            .merchantAccountId(FAKE_VENMO_ACCOUNT_MERCHANT_ACCOUNT_ID)
+            .amount(SandboxValues.TransactionAmount.AUTHORIZE.amount)
+            .paymentMethodNonce(Nonce.GatewayRejectedTokenIssuance);
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+        Transaction transaction = result.getTransaction();
+        System.out.println(transaction);
+
+        assertEquals(Transaction.Status.GATEWAY_REJECTED, transaction.getStatus());
+        assertEquals(Transaction.GatewayRejectionReason.TOKEN_ISSUANCE, transaction.getGatewayRejectionReason());
     }
 
     @Test
@@ -1839,8 +2060,13 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
                     data().
                         folioNumber("aaa").
                         checkInDate("2014-07-07").
-                        checkOutDate("2014-08-08").
-                        roomRate("2.00").
+                        checkOutDate("2014-07-11").
+                        roomRate(new BigDecimal("200.00")).
+                        roomTax(new BigDecimal("50.00")).
+                        noShow(false).
+                        advancedDeposit(false).
+                        fireSafe(true).
+                        propertyPhone("1112223333").
                         done().
                     done();
 
@@ -1870,6 +2096,69 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
 
         assertEquals(ValidationErrorCode.INDUSTRY_DATA_LODGING_CHECK_OUT_DATE_MUST_FOLLOW_CHECK_IN_DATE,
                 result.getErrors().forObject("transaction").forObject("industry").onField("checkOutDate").get(0).getCode());
+    }
+
+    @Test
+    public void saleWithLodgingIndustryDataWithAdditionalCharges() {
+        TransactionRequest request = new TransactionRequest().
+                amount(TransactionAmount.AUTHORIZE.amount).
+                creditCard().
+                    number(CreditCardNumber.VISA.number).
+                    expirationDate("05/2009").
+                    done().
+                industry().
+                    industryType(Transaction.IndustryType.LODGING).
+                    data().
+                        folioNumber("aaa").
+                        checkInDate("2014-07-07").
+                        checkOutDate("2014-07-11").
+                        roomRate(new BigDecimal("170.00")).
+                        roomTax(new BigDecimal("30.00")).
+                        additionalCharge().
+                          kind(TransactionIndustryDataAdditionalChargeRequest.Kind.GIFT_SHOP).
+                          amount(new BigDecimal("50.00")).
+                          done().
+                        additionalCharge().
+                          kind(TransactionIndustryDataAdditionalChargeRequest.Kind.MINI_BAR).
+                          amount(new BigDecimal("150.00")).
+                          done().
+                        done().
+                    done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertTrue(result.isSuccess());
+    }
+
+    @Test
+    public void saleWithLodgingIndustryDataWithAdditionalChargesValidation() {
+        TransactionRequest request = new TransactionRequest().
+                amount(TransactionAmount.AUTHORIZE.amount).
+                creditCard().
+                    number(CreditCardNumber.VISA.number).
+                    expirationDate("05/2009").
+                    done().
+                industry().
+                    industryType(Transaction.IndustryType.LODGING).
+                    data().
+                        folioNumber("aaa").
+                        checkInDate("2014-07-07").
+                        checkOutDate("2014-08-08").
+                        additionalCharge().
+                          kind(TransactionIndustryDataAdditionalChargeRequest.Kind.OTHER).
+                          amount(new BigDecimal("0.00")).
+                          done().
+                        additionalCharge().
+                          kind(TransactionIndustryDataAdditionalChargeRequest.Kind.MINI_BAR).
+                          amount(new BigDecimal("40.00")).
+                          done().
+                        done().
+                    done();
+
+        Result<Transaction> result = gateway.transaction().sale(request);
+        assertFalse(result.isSuccess());
+
+        assertEquals(ValidationErrorCode.INDUSTRY_DATA_ADDITIONAL_CHARGE_AMOUNT_MUST_BE_GREATER_THAN_ZERO,
+                result.getErrors().forObject("transaction").forObject("industry").forObject("additionalCharges").forObject("index_0").onField("amount").get(0).getCode());
     }
 
     @Test
@@ -4548,6 +4837,25 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
     }
 
     @Test
+    public void searchOnsPaymentInstrumentTypeIsLocalPayment() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("1000")).
+            options().
+                submitForSettlement(true).
+                done().
+            paymentMethodNonce(Nonce.LocalPayment);
+
+        Transaction transaction = gateway.transaction().sale(request).getTarget();
+
+        TransactionSearchRequest searchRequest = new TransactionSearchRequest().
+            id().is(transaction.getId()).
+            paymentInstrumentType().is("LocalPaymentDetail");
+
+        ResourceCollection<Transaction> collection = gateway.transaction().search(searchRequest);
+        assertEquals(collection.getFirst().getPaymentInstrumentType(), PaymentInstrumentType.LOCAL_PAYMENT);
+    }
+
+    @Test
     public void searchOnsPaymentInstrumentTypeIsApplePay() {
         TransactionRequest request = new TransactionRequest().
             amount(new BigDecimal("1000")).
@@ -6127,6 +6435,33 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
     }
 
     @Test
+    public void createLocalPaymentTransaction() {
+        TransactionRequest request = new TransactionRequest().
+            amount(new BigDecimal("100.00")).
+            options().
+                submitForSettlement(true).
+                done().
+            paymentMethodNonce(Nonce.LocalPayment);
+
+        Result<Transaction> saleResult = gateway.transaction().sale(request);
+
+        assertTrue(saleResult.isSuccess());
+        assertNotNull(saleResult.getTarget().getLocalPaymentDetails());
+        assertNotNull(saleResult.getTarget().getLocalPaymentDetails().getPayerId());
+        assertNotNull(saleResult.getTarget().getLocalPaymentDetails().getPaymentId());
+        assertNotNull(saleResult.getTarget().getLocalPaymentDetails().getFundingSource());
+        assertNotNull(saleResult.getTarget().getLocalPaymentDetails().getCaptureId());
+        assertNotNull(saleResult.getTarget().getLocalPaymentDetails().getDebugId());
+        assertNotNull(saleResult.getTarget().getLocalPaymentDetails().getTransactionFeeAmount());
+        assertNotNull(saleResult.getTarget().getLocalPaymentDetails().getTransactionFeeCurrencyIsoCode());
+
+        assertEquals(
+            PaymentInstrumentType.LOCAL_PAYMENT,
+            saleResult.getTarget().getPaymentInstrumentType()
+        );
+    }
+
+    @Test
     public void createPayPalTransactionWithLocalPaymentContent() {
         TransactionRequest request = new TransactionRequest().
             amount(new BigDecimal("100.00")).
@@ -6532,6 +6867,8 @@ public class TransactionIT extends IntegrationTest implements MerchantAccountTes
         assertNotNull(transaction.getPayPalDetails().getRefundId());
         assertNotNull(transaction.getPayPalDetails().getTransactionFeeAmount());
         assertNotNull(transaction.getPayPalDetails().getTransactionFeeCurrencyIsoCode());
+        assertNotNull(transaction.getPayPalDetails().getRefundFromTransactionFeeAmount());
+        assertNotNull(transaction.getPayPalDetails().getRefundFromTransactionFeeCurrencyIsoCode());
     }
 
     @Test

@@ -15,9 +15,11 @@ public class TransactionOptionsRequest extends Request {
     private Boolean skipAvs;
     private Boolean skipCvv;
     private TransactionOptionsPayPalRequest transactionOptionsPayPalRequest;
+    private TransactionOptionsAdyenRequest transactionOptionsAdyenRequest;
     private TransactionOptionsAmexRewardsRequest transactionOptionsAmexRewardsRequest;
     private TransactionOptionsThreeDSecureRequest transactionOptionsThreeDSecureRequest;
     private TransactionOptionsVenmoRequest transactionOptionsVenmoRequest;
+    private TransactionOptionsCreditCardRequest transactionOptionsCreditCardRequest;
 
     public TransactionOptionsRequest(TransactionRequest parent) {
         this.parent = parent;
@@ -92,6 +94,11 @@ public class TransactionOptionsRequest extends Request {
         return transactionOptionsPayPalRequest;
     }
 
+    public TransactionOptionsAdyenRequest adyen() {
+        transactionOptionsAdyenRequest = new TransactionOptionsAdyenRequest(this);
+        return transactionOptionsAdyenRequest;
+    }
+
     public TransactionOptionsAmexRewardsRequest amexRewards() {
         transactionOptionsAmexRewardsRequest = new TransactionOptionsAmexRewardsRequest(this);
         return transactionOptionsAmexRewardsRequest;
@@ -105,6 +112,11 @@ public class TransactionOptionsRequest extends Request {
     public TransactionOptionsVenmoRequest venmo() {
         transactionOptionsVenmoRequest = new TransactionOptionsVenmoRequest(this);
         return transactionOptionsVenmoRequest;
+    }
+
+    public TransactionOptionsCreditCardRequest creditCard() {
+        transactionOptionsCreditCardRequest = new TransactionOptionsCreditCardRequest(this);
+        return transactionOptionsCreditCardRequest;
     }
 
     @Override
@@ -138,7 +150,9 @@ public class TransactionOptionsRequest extends Request {
             addElement("skipCvv", skipCvv).
             addElement("threeDSecure", transactionOptionsThreeDSecureRequest).
             addElement("venmo", transactionOptionsVenmoRequest).
+            addElement("adyen", transactionOptionsAdyenRequest).
             addElement("paypal", transactionOptionsPayPalRequest).
-            addElement("payWithAmexRewards", transactionOptionsAmexRewardsRequest);
+            addElement("payWithAmexRewards", transactionOptionsAmexRewardsRequest).
+            addElement("creditCard", transactionOptionsCreditCardRequest);
     }
 }

@@ -1,5 +1,6 @@
 package com.braintreegateway;
 
+import java.util.Map;
 import com.braintreegateway.util.NodeWrapper;
 
 public class PaymentMethodNonce {
@@ -11,6 +12,7 @@ public class PaymentMethodNonce {
     private ThreeDSecureInfo threeDSecureInfo;
     private String type;
     private BinData binData;
+    private AuthenticationInsight authenticationInsight;
 
     public PaymentMethodNonce(NodeWrapper node) {
         isDefault = node.findBoolean("default");
@@ -32,6 +34,39 @@ public class PaymentMethodNonce {
         NodeWrapper binDataNode = node.findFirst("bin-data");
         if (binDataNode != null && !binDataNode.isBlank()) {
             binData = new BinData(binDataNode);
+        }
+
+        NodeWrapper authenticationInsightNode = node.findFirst("authentication-insight");
+        if (authenticationInsightNode != null && !authenticationInsightNode.isBlank()) {
+            authenticationInsight = new AuthenticationInsight(authenticationInsightNode);
+        }
+    }
+
+    public PaymentMethodNonce(Map<String, Object> map) {
+        isDefault = (Boolean) map.get("default");
+        publicId = (String) map.get("nonce");
+        isLocked = (Boolean) map.get("locked");
+        isConsumed = (Boolean) map.get("consumed");
+        type = (String) map.get("type");
+
+        Map<String, Object> detailsMap = (Map) map.get("details");
+        if (detailsMap != null) {
+            details = new PaymentMethodNonceDetails(detailsMap);
+        }
+
+        Map<String, Object> threeDSecureInfoMap = (Map) map.get("threeDSecureInfo");
+        if (threeDSecureInfoMap != null) {
+            threeDSecureInfo = new ThreeDSecureInfo(threeDSecureInfoMap);
+        }
+
+        Map<String, String> binDataMap = (Map) map.get("binData");
+        if (binDataMap != null) {
+            binData = new BinData(binDataMap);
+        }
+
+        Map<String, Object> authenticationInsightMap = (Map) map.get("authenticationInsight");
+        if (authenticationInsightMap != null) {
+            authenticationInsight = new AuthenticationInsight(authenticationInsightMap);
         }
     }
 
@@ -69,5 +104,9 @@ public class PaymentMethodNonce {
 
     public BinData getBinData() {
         return binData;
+    }
+
+    public AuthenticationInsight getAuthenticationInsight() {
+        return authenticationInsight;
     }
 }

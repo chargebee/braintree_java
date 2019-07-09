@@ -4,10 +4,12 @@ public class PaymentMethodOptionsRequest extends Request {
     private Boolean makeDefault;
     private PaymentMethodRequest parent;
     private String verificationMerchantAccountId;
+    private String verificationAccountType;
     private Boolean failOnDuplicatePaymentMethod;
     private Boolean verifyCard;
     private String verificationAmount;
     private String venmoSdkSession;
+    private PaymentMethodOptionsAdyenRequest paymentMethodOptionsAdyenRequest;
     private PaymentMethodOptionsPayPalRequest paymentMethodOptionsPayPalRequest;
     private UsBankAccountVerification.VerificationMethod usBankAccountVerificationMethod;
 
@@ -32,6 +34,11 @@ public class PaymentMethodOptionsRequest extends Request {
 
     public PaymentMethodOptionsRequest verificationMerchantAccountId(String verificationMerchantAccountId) {
         this.verificationMerchantAccountId = verificationMerchantAccountId;
+        return this;
+    }
+
+    public PaymentMethodOptionsRequest verificationAccountType(String verificationAccountType) {
+        this.verificationAccountType = verificationAccountType;
         return this;
     }
 
@@ -60,6 +67,11 @@ public class PaymentMethodOptionsRequest extends Request {
         return paymentMethodOptionsPayPalRequest;
     }
 
+    public PaymentMethodOptionsAdyenRequest adyen() {
+        paymentMethodOptionsAdyenRequest = new PaymentMethodOptionsAdyenRequest(this);
+        return paymentMethodOptionsAdyenRequest;
+    }
+
     public PaymentMethodOptionsRequest usBankAccountVerificationMethod(UsBankAccountVerification.VerificationMethod verificationMethod) {
         this.usBankAccountVerificationMethod = verificationMethod;
         return this;
@@ -78,12 +90,14 @@ public class PaymentMethodOptionsRequest extends Request {
         builder.addElement("verifyCard", verifyCard);
         builder.addElement("verificationAmount", verificationAmount);
         builder.addElement("verificationMerchantAccountId", verificationMerchantAccountId);
+        builder.addElement("verificationAccountType", verificationAccountType);
         if (makeDefault != null && makeDefault.booleanValue()) {
             builder.addElement("makeDefault", makeDefault);
         }
 
         builder.addElement("venmoSdkSession", venmoSdkSession);
         builder.addElement("paypal", paymentMethodOptionsPayPalRequest);
+        builder.addElement("adyen", paymentMethodOptionsAdyenRequest);
         builder.addElement("usBankAccountVerificationMethod", usBankAccountVerificationMethod);
         return builder;
     }

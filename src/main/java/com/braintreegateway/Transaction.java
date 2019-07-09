@@ -50,6 +50,7 @@ public class Transaction {
         DUPLICATE("duplicate"),
         FRAUD("fraud"),
         THREE_D_SECURE("three_d_secure"),
+        TOKEN_ISSUANCE("token_issuance"),
         UNRECOGNIZED("unrecognized");
 
         private final String name;
@@ -148,9 +149,12 @@ public class Transaction {
     private AmexExpressCheckoutDetails amexExpressCheckoutDetails;
     private VenmoAccountDetails venmoAccountDetails;
     private UsBankAccountDetails usBankAccountDetails;
+    // NEXT_MAJOR_VERSION Remove this class as legacy Ideal has been removed/disabled in the Braintree Gateway
+    // DEPRECATED If you're looking to accept iDEAL as a payment method contact accounts@braintreepayments.com for a solution.
     private IdealPaymentDetails idealPaymentDetails;
     private VisaCheckoutCardDetails visaCheckoutCardDetails;
     private MasterpassCardDetails masterpassCardDetails;
+    private LocalPaymentDetails localPaymentDetails;
     private String planId;
     private String processorAuthorizationCode;
     private String processorResponseCode;
@@ -205,21 +209,36 @@ public class Transaction {
         avsErrorResponseCode = node.findString("avs-error-response-code");
         avsPostalCodeResponseCode = node.findString("avs-postal-code-response-code");
         avsStreetAddressResponseCode = node.findString("avs-street-address-response-code");
-        billingAddress = new Address(node.findFirst("billing"));
         channel = node.findString("channel");
         createdAt = node.findDateTime("created-at");
-        creditCard = new CreditCard(node.findFirst("credit-card"));
         currencyIsoCode = node.findString("currency-iso-code");
         customFields = node.findMap("custom-fields/*");
-        customer = new Customer(node.findFirst("customer"));
         cvvResponseCode = node.findString("cvv-response-code");
-        disbursementDetails = new DisbursementDetails(node.findFirst("disbursement-details"));
-        descriptor = new Descriptor(node.findFirst("descriptor"));
         escrowStatus = EnumUtils.findByName(EscrowStatus.class, node.findString("escrow-status"), EscrowStatus.UNRECOGNIZED);
         gatewayRejectionReason = EnumUtils.findByName(GatewayRejectionReason.class, node.findString("gateway-rejection-reason"), GatewayRejectionReason.UNRECOGNIZED);
         id = node.findString("id");
         merchantAccountId = node.findString("merchant-account-id");
         orderId = node.findString("order-id");
+        NodeWrapper billingAddressNode = node.findFirst("billing");
+        if (billingAddressNode != null) {
+            billingAddress = new Address(billingAddressNode);
+        }
+        NodeWrapper creditCardNode = node.findFirst("credit-card");
+        if (creditCardNode != null) {
+            creditCard = new CreditCard(creditCardNode);
+        }
+        NodeWrapper customerNode = node.findFirst("customer");
+        if (customerNode != null) {
+            customer = new Customer(customerNode);
+        }
+        NodeWrapper disbursementDetailsNode = node.findFirst("disbursement-details");
+        if (disbursementDetailsNode != null) {
+            disbursementDetails = new DisbursementDetails(disbursementDetailsNode);
+        }
+        NodeWrapper descriptorNode = node.findFirst("descriptor");
+        if (descriptorNode != null) {
+            descriptor = new Descriptor(descriptorNode);
+        }
         NodeWrapper paypalNode = node.findFirst("paypal");
         if (paypalNode != null) {
             paypalDetails = new PayPalDetails(paypalNode);
@@ -248,9 +267,15 @@ public class Transaction {
         if (usBankAccountNode != null) {
             usBankAccountDetails = new UsBankAccountDetails(usBankAccountNode);
         }
+        // NEXT_MAJOR_VERSION Remove this class as legacy Ideal has been removed/disabled in the Braintree Gateway
+        // DEPRECATED If you're looking to accept iDEAL as a payment method contact accounts@braintreepayments.com for a solution.
         NodeWrapper idealPaymentNode = node.findFirst("ideal-payment");
         if (idealPaymentNode != null) {
             idealPaymentDetails = new IdealPaymentDetails(idealPaymentNode);
+        }
+        NodeWrapper localPaymentNode = node.findFirst("local-payment");
+        if (localPaymentNode != null) {
+            localPaymentDetails = new LocalPaymentDetails(localPaymentNode);
         }
         NodeWrapper visaCheckoutCardNode = node.findFirst("visa-checkout-card");
         if (visaCheckoutCardNode != null) {
@@ -290,10 +315,19 @@ public class Transaction {
 
         serviceFeeAmount = node.findBigDecimal("service-fee-amount");
         settlementBatchId = node.findString("settlement-batch-id");
-        shippingAddress = new Address(node.findFirst("shipping"));
+
+        NodeWrapper shippingAddressNode = node.findFirst("shipping");
+        if (shippingAddressNode != null) {
+            shippingAddress = new Address(shippingAddressNode);
+        }
+
         status = EnumUtils.findByName(Status.class, node.findString("status"), Status.UNRECOGNIZED);
-        subscriptionDetails = new SubscriptionDetails(node.findFirst("subscription"));
-        subscription = new Subscription(node.findFirst("subscription"));
+
+        NodeWrapper subscriptionNode = node.findFirst("subscription");
+        if (subscriptionNode != null) {
+            subscriptionDetails = new SubscriptionDetails(subscriptionNode);
+            subscription = new Subscription(subscriptionNode);
+        }
         subscriptionId = node.findString("subscription-id");
         taxAmount = node.findBigDecimal("tax-amount");
         taxExempt = node.findBoolean("tax-exempt");
@@ -473,8 +507,16 @@ public class Transaction {
         return usBankAccountDetails;
     }
 
+    // NEXT_MAJOR_VERSION Remove this class as legacy Ideal has been removed/disabled in the Braintree Gateway
+    /**
+     * @deprecated If you're looking to accept iDEAL as a payment method [contact us](accounts@braintreepayments.com) for a solution.
+     */
     public IdealPaymentDetails getIdealPaymentDetails() {
         return idealPaymentDetails;
+    }
+
+    public LocalPaymentDetails getLocalPaymentDetails() {
+        return localPaymentDetails;
     }
 
     public VisaCheckoutCardDetails getVisaCheckoutCardDetails() {

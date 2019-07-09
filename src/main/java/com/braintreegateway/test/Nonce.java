@@ -19,6 +19,7 @@ public class Nonce {
   public static final String AndroidPayAmEx = "fake-android-pay-amex-nonce";
   public static final String AmexExpressCheckout = "fake-amex-express-checkout-nonce";
   public static final String VenmoAccount = "fake-venmo-account-nonce";
+  public static final String LocalPayment = "fake-local-payment-method-nonce";
   public static final String MasterpassAmEx = "fake-masterpass-amex-nonce";
   public static final String MasterpassDiscover = "fake-masterpass-discover-nonce";
   public static final String MasterpassMaestro = "fake-masterpass-maestro-nonce";
@@ -55,6 +56,7 @@ public class Nonce {
   public static final String PayPalFuturePaymentRefreshToken = "fake-paypal-future-refresh-token-nonce";
   public static final String SEPA = "fake-sepa-bank-account-nonce";
   public static final String GatewayRejectedFraud = "fake-gateway-rejected-fraud-nonce";
+  public static final String GatewayRejectedTokenIssuance = "fake-token-issuance-error-venmo-account-nonce";
   public static final String SamsungPayAmEx = "tokensam_fake_american_express";
   public static final String SamsungPayDiscover = "tokensam_fake_discover";
   public static final String SamsungPayMasterCard = "tokensam_fake_mastercard";
